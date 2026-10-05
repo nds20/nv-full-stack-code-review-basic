@@ -1,4 +1,4 @@
-824: Enterprise Code Review Engine
+824™️: Enterprise Code Review Engine
 “Your Copilot, Not Your Replacement.”
 Beast Enterprise Review is an enterprise-grade AI-powered code review engine designed to reduce friction in the development lifecycle. Built for security, compliance, and velocity, it integrates directly into your CI/CD pipeline to ensure that every pull request meets the highest standards of code quality.
 ￼
@@ -51,4 +51,4 @@ jobs:
 ￼     Modular Architecture: Designed for extensibility—add your own custom analyzers to fit your team’s unique stack.
 ￼
 📜 License
-© 2026 824. All rights reserved.
+© 2026 824™️ All rights reserved.
