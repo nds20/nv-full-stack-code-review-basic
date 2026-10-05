@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: ywrite
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node
@@ -51,4 +51,4 @@ jobs:
 ￼     Modular Architecture: Designed for extensibility—add your own custom analyzers to fit your team’s unique stack.
 ￼
 📜 License
-© 2026 BeastMode82420. All rights reserved.
+© 2026 824. All rights reserved.
