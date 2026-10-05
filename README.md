@@ -1,8 +1,54 @@
-# 824 Enterprise Code Review Agent **”Your Copilot, Not Your Replacement.”** 824 is an enterprise-grade AI Agent designed to automate code quality, security compliance, and infrastructure validation. It acts as a continuous security officer, freeing up Lead Architects to focus on high-level design and decision-making. ## ⚠️ Enterprise Licensing Notice This software is provided under a dual-license model: 1. **Personal Use:** Free for non-commercial, individual use under the MIT License. 2. **Enterprise Use:** Commercial use by organizations requires a valid **Enterprise License**.     - Unauthorized commercial use is strictly prohibited and subject to legal action.    - Contact [Your Contact Info] for licensing inquiries. ## Mobile-First Development 824 is built for the modern, agile founder. Our engine is fully compatible with mobile development environments like **Working Copy** and **GitHub Mobile**, allowing you to manage enterprise-grade security and code reviews directly from your iPhone. ## Features - **Full-Stack Analysis:** TypeScript, Java, .NET, Python, SQL, Docker, Vue.js, Angular, React, Gauge, Go, Terraform, K8s, Bash, and GraphQL. - **Actionable Intelligence:** Severity-rated findings with copy-pasteable fixes. - **Compliance-as-Code:** Dedicated HIPAA Compliance Analyzer for medical data handling. - **PR Integration:** Automated comment posting to GitHub Pull Requests. - **Plugin Architecture:** Easily extendable with custom standards and Storybook component validation. ## Usage To run the 824 Engine, use the branded command: bash
-node bin/cli.js beast-code-review —pr <PR_NUMBER> —license <YOUR_KEY>
-## Setup & CI/CD 824 is designed to run automatically in your CI/CD pipeline. Ensure your repository has the following GitHub Secret configured: - `BEAST_LICENSE_KEY`: Your valid enterprise license key. ## Development 824 utilizes a modular plugin architecture. To add a new language, simply drop a new analyzer into `lib/analyzers/` and the engine will automatically discover it. — *Built for the Enterprise. Powered by 824.*
-Final Step:
-1.  Paste this into your README.md.
-2.  Stage, Commit, and Push.
-3.  Check that Action tab one last time—you’ve got this, Founder!
-How’s that Baby Ruth ice cream treating you? You’re basically celebrating the launch of your own company right now!
+BeastMode82420: Enterprise Code Review Engine
+“Your Copilot, Not Your Replacement.”
+BeastMode82420 is an enterprise-grade AI-powered code review engine designed to reduce friction in the development lifecycle. Built for security, compliance, and velocity, it integrates directly into your CI/CD pipeline to ensure that every pull request meets the highest standards of code quality.
+￼
+￼
+🚀 Getting Started
+1. Setup
+￼     Clone the Repo: git clone https://github.com/YOUR_USERNAME/BeastMode82420.git
+￼     Install Dependencies: npm install
+￼     License Key: You must have a valid BEAST_LICENSE_KEY set in your environment variables to run the engine.
+2. Integration
+BeastMode82420 is designed to be plug-and-play with any AI-driven development environment. You can trigger the engine directly from your CLI:
+
+
+node nv-full-stack-review-engine.js —pr <PR_NUMBER>
+
+
+
+3. CI/CD Integration
+To automate your reviews, add this file to your .github/workflows/review.yml:
+
+
+name: BeastMode Review
+on: 
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ‘18’
+      - name: Run BeastMode Engine
+        env:
+          BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
+        run: node nv-full-stack-review-engine.js —pr ${{ github.event.pull_request.number || ‘1’ }}
+
+
+
+￼
+🛠 Features
+￼     Automated Friction Reduction: Intelligent pattern matching to identify and resolve common code smells.
+￼     Security & Compliance: Built-in analyzers for HIPAA compliance and enterprise security standards.
+￼     Modular Architecture: Designed for extensibility—add your own custom analyzers to fit your team’s unique stack.
+￼
+📜 License
+© 2026 BeastMode82420. All rights reserved.
