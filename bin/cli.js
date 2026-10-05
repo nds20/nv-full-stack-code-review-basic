@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/env node
 const { Command } = require('commander');
 const orchestrator = require('../lib/core/orchestrator');
@@ -7,7 +5,6 @@ const program = new Command();
 program
   .version('1.0.0')
   .description('824 Enterprise Code Review Agent');
-// Defining the new branded command
 program
   .command('beast-code-review')
   .description('Run the 824 Enterprise Code Review Engine')

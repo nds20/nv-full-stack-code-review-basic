@@ -1,0 +1,20 @@
+{
+  "name": "824-full-stack-review",
+  "version": "1.0.0",
+  "description": "824: Your Copilot, Not Your Replacement.",
+  "main": "bin/cli.js",
+  "author": "Beast",
+  "license": "Commercial-Enterprise",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@modelcontextprotocol/client": "^2.0.0"
+  },
+  "scripts": {
+    "start": "node bin/cli.js"
+  }
+}
+
+
