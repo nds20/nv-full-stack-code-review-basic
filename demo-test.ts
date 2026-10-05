@@ -1,5 +1,3 @@
-    
-
 // 824 Enterprise Demo: Triggering multiple analyzers
 import { something } from 'request'; // DEP-001 (Deprecated)
 function beastDemo() {
