@@ -1,6 +1,6 @@
-824™️: Enterprise Code Review Engine
+824™️: BeastMode Enterprise Code Review Engine
 “Your Copilot, Not Your Replacement.”
-Beast Enterprise Review is an enterprise-grade AI-powered code review engine designed to reduce friction in the development lifecycle. Built for security, compliance, and velocity, it integrates directly into your CI/CD pipeline to ensure that every pull request meets the highest standards of code quality.
+BeastMode Enterprise Code Review is an enterprise-grade AI-powered code review engine designed to reduce friction in the development lifecycle. Built for security, compliance, and velocity, it integrates directly into your CI/CD pipeline to ensure that every pull request meets the highest standards of code quality.
 ￼
 ￼
 🚀 Getting Started
@@ -9,7 +9,7 @@ Beast Enterprise Review is an enterprise-grade AI-powered code review engine des
 ￼     Install Dependencies: npm install
 ￼     License Key: You must have a valid BEAST_LICENSE_KEY set in your environment variables to run the engine.
 2. Integration
-Beast Enterprise Review is designed to be plug-and-play with any AI-driven development environment. You can trigger the engine directly from your CLI:
+BeastMode Enterprise Code Review is designed to be plug-and-play with any AI-driven development environment. You can trigger the engine directly from your CLI:
 
 
 node nv-full-stack-review-engine.js —pr <PR_NUMBER>
@@ -20,7 +20,7 @@ node nv-full-stack-review-engine.js —pr <PR_NUMBER>
 To automate your reviews, add this file to your .github/workflows/review.yml:
 
 
-name: BeastMode Review
+name: BeastMode Enterprise Code Review
 on: 
   push:
   pull_request:
