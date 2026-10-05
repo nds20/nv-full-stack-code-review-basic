@@ -17,5 +17,3 @@ jobs:
         env:
           BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
         run: node nv-full-stack-review-engine.js --pr ${{ github.event.pull_request.number }}
-
-
