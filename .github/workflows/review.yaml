@@ -1,0 +1,21 @@
+name: BeastMode Review
+on: [pull_request]
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Start
+        run: echo "--- BEAST MODE ENGINE STARTING ---"
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm install
+      - name: Run Review
+        env:
+          BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
+        run: node nv-full-stack-review-engine.js --pr ${{ github.event.pull_request.number }}
+
+
