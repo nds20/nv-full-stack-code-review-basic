@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize]
 permissions:
   contents: read
-  pull-requests: write # <--- THIS IS THE KEY!
+  pull-requests: write
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -19,6 +19,6 @@ jobs:
       - name: Run Beast Agent
         run: node bin/cli.js beast-code-review --pr ${{ github.event.pull_request.number }} --license ${{ secrets.BEAST_LICENSE_KEY }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # <--- Add this too!
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
