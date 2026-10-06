@@ -9,7 +9,7 @@ jobs:
         with:
           node-version: '18'
       - name: Run AFS Integrity Check
-        run: node -e 'require("./afs-hook.js").runAFSIntegrityCheck("README.md")'
+        run: node -e 'require("./afs-hook.js").runAFSIntegrityCheck()'
       - name: Run 824 Engine
         env:
           BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}

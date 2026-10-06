@@ -1,27 +1,23 @@
+
+
 // afs-hook.js
-// The Abamonte, Foster, Smith Legacy Hook
-// Integrity Layer for the 824 Enterprise Engine
 const fs = require('fs');
-const AFS_LOG_PREFIX = "[AFS-HOOK-INTEGRITY]";
-function runAFSIntegrityCheck(filePath) {
-    console.log(`${AFS_LOG_PREFIX} Initiating scan on: ${filePath}`);
-try {
-        const content = fs.readFileSync(filePath, 'utf8');
-// 1. Foster Structural Check (Look for structural weak points)
-        if (content.includes("<<<<<<< HEAD")) {
-            console.log(`${AFS_LOG_PREFIX} Conflict detected! Initiating Smith-style friction resolution...`);
-// 2. Abamonte Discipline (Resolve by keeping the latest HEAD)
-            const resolved = content.replace(/<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>>/gs, '$1');
-fs.writeFileSync(filePath, resolved);
-            console.log(`${AFS_LOG_PREFIX} Integrity Restored. Conflict resolved autonomously.`);
-            return true;
+const path = require('path');
+function runAFSIntegrityCheck(dir = '.') {
+    console.log("[AFS-HOOK] Scanning for friction...");
+    const files = fs.readdirSync(dir);
+files.forEach(file => {
+        if (file.endsWith('.md') || file.endsWith('.js') || file.endsWith('.yml')) {
+            const content = fs.readFileSync(file, 'utf8');
+            if (content.includes("<<<<<<<")) {
+                console.log(`[AFS-HOOK] Conflict found in: ${file}. Initiating resolution...`);
+                // The regex: finds the HEAD block and keeps it, discarding the incoming changes
+                const resolved = content.replace(/<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>>.*?\n/gs, '$1');
+                fs.writeFileSync(file, resolved);
+                console.log(`[AFS-HOOK] ${file} healed.`);
+            }
         }
-console.log(`${AFS_LOG_PREFIX} System integrity verified. No friction detected.`);
-        return true;
-    } catch (err) {
-        console.error(`${AFS_LOG_PREFIX} System failure: ${err.message}`);
-        return false;
-    }
+    });
 }
 module.exports = { runAFSIntegrityCheck };
 
