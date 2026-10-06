@@ -4,8 +4,10 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
       - name: Run AFS Integrity Check
@@ -14,3 +16,5 @@ jobs:
         env:
           BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
         run: node nv-full-stack-review-engine.js --pr ${{ github.event.pull_request.number || '1' }}
+
+
