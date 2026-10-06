@@ -1,27 +1,22 @@
+
+
 name: BeastMode Review
-on: 
- push:
- pull_request:
- workflow_dispatch:
+on: [push, pull_request]
 jobs:
  review:
   runs-on: ubuntu-latest
-  permissions:
-   contents: read
-   pull-requests: write
   steps:
-- name: Checkout Code
+   - name: Checkout Code
      uses: actions/checkout@v3
 - name: Setup Node
      uses: actions/setup-node@v3
      with:
-       node-version: '18'
-- name: Install Dependencies
-     run: npm install
+      node-version: '18'
 - name: Run AFS Integrity Check
-     run: |
-          node -e 'const hook = require("./afs-hook.js"); hook.runAFSIntegrityCheck("README.md");'
+     run: node -e 'require("./afs-hook.js").runAFSIntegrityCheck("README.md")'
 - name: Run 824 Engine
      env:
-       BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
+      BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
      run: node nv-full-stack-review-engine.js --pr ${{ github.event.pull_request.number || '1' }}
+
+
