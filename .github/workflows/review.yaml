@@ -19,7 +19,8 @@ jobs:
 - name: Install Dependencies
      run: npm install
 - name: Run AFS Integrity Check
-     run: node -e 'require("./afs-hook.js").runAFSIntegrityCheck("README.md")'
+     run: |
+          node -e 'const hook = require("./afs-hook.js"); hook.runAFSIntegrityCheck("README.md");'
 - name: Run 824 Engine
      env:
        BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
