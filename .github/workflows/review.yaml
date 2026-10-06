@@ -21,3 +21,8 @@ jobs:
         env:
           BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
         run: node nv-full-stack-review-engine.js --pr ${{ github.event.pull_request.number || '1' }}
+        name: Run AFS Integrity Check
+        run: node -e 'require("./afs-hook.js").runAFSIntegrityCheck("README.md")'
+
+
+
