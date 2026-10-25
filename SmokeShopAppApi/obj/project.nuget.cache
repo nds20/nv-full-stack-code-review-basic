@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "/k8Ci0NPJJs=",
+  "success": true,
+  "projectFilePath": "C:\\Develop\\nv-full-stack-code-review-basic\\SmokeShopAppApi\\SmokeShopAppApi.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Beast\\.nuget\\packages\\microsoft.aspnetcore.openapi\\11.0.0-rc.2.26504.105\\microsoft.aspnetcore.openapi.11.0.0-rc.2.26504.105.nupkg.sha512",
+    "C:\\Users\\Beast\\.nuget\\packages\\microsoft.openapi\\3.10.2\\microsoft.openapi.3.10.2.nupkg.sha512"
+  ],
+  "logs": []
+}
