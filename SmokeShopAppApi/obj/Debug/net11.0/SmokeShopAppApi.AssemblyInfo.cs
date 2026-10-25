@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmokeShopAppApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4257f11006be8cf9249bc0c50a86ce2babfb335b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+41bbc46e1471ce4d2f812de2c651483b3d53c129")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmokeShopAppApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmokeShopAppApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
