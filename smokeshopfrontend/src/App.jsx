@@ -1,46 +1,96 @@
 import { useState } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import AgeGate from './components/AgeGate';
+import LoginPage from './components/LoginPage';
+import ProductsPage from './components/ProductsPage';
+import ProductDetailPage from './components/ProductDetailPage';
+import CartPage from './components/CartPage';
+import CheckoutPage from './components/CheckoutPage';
+import OrderConfirmationPage from './components/OrderConfirmationPage';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('agegate');
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [orderId, setOrderId] = useState(null);
+
+  const handleAgeVerify = (zip) => {
+    console.log('Age verified with ZIP:', zip);
+    setCurrentPage('products');
+  };
+
+  const handleLogin = (creds) => {
+    console.log('User logged in:', creds);
+    setCurrentPage('products');
+  };
+
+  const handleProductSelect = (id) => {
+    setSelectedProductId(id);
+    setCurrentPage('product-detail');
+  };
+
+  const handleCheckout = () => {
+    setCurrentPage('checkout');
+  };
+
+  const handlePlaceOrder = async (order) => {
+    console.log('Order placed:', order);
+    setOrderId('ORD-' + Date.now());
+    setCurrentPage('order-confirmation');
+  };
 
   return (
     <AuthProvider>
       <CartProvider>
-        <div style={{ minHeight: '100vh', fontFamily: 'system-ui' }}>
-          {currentPage === 'agegate' && (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <h1>Smoke Shop</h1>
-              <p>Age verification required</p>
-              <button onClick={() => setCurrentPage('products')} style={{ padding: '10px 20px', fontSize: '16px' }}>Enter</button>
-            </div>
-          )}
-          {currentPage === 'products' && (
-            <div style={{ padding: '40px' }}>
-              <h1>Products</h1>
-              <button onClick={() => setCurrentPage('cart')}>Go to Cart</button>
-            </div>
-          )}
-          {currentPage === 'cart' && (
-            <div style={{ padding: '40px' }}>
-              <h1>Shopping Cart</h1>
-              <button onClick={() => setCurrentPage('checkout')}>Checkout</button>
-            </div>
-          )}
-          {currentPage === 'checkout' && (
-            <div style={{ padding: '40px' }}>
-              <h1>Checkout</h1>
-              <button onClick={() => setCurrentPage('confirmation')}>Place Order</button>
-            </div>
-          )}
-          {currentPage === 'confirmation' && (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <h1>✓ Order Confirmed!</h1>
-              <p>Thank you for your order</p>
-            </div>
-          )}
-        </div>
+        {currentPage === 'agegate' && (
+          <AgeGate
+            onVerify={handleAgeVerify}
+            onLogIn={() => setCurrentPage('login')}
+          />
+        )}
+        {currentPage === 'login' && (
+          <LoginPage
+            onLogIn={handleLogin}
+            onCreateAccount={() => setCurrentPage('agegate')}
+            onBack={() => setCurrentPage('agegate')}
+          />
+        )}
+        {currentPage === 'products' && (
+          <ProductsPage
+            onProductSelect={handleProductSelect}
+            onBack={() => setCurrentPage('agegate')}
+            cartCount={0}
+            onCart={() => setCurrentPage('cart')}
+          />
+        )}
+        {currentPage === 'product-detail' && selectedProductId && (
+          <ProductDetailPage
+            productId={selectedProductId}
+            onBack={() => setCurrentPage('products')}
+            cartCount={0}
+            onCart={() => setCurrentPage('cart')}
+          />
+        )}
+        {currentPage === 'cart' && (
+          <CartPage
+            onCheckout={handleCheckout}
+            onContinueShopping={() => setCurrentPage('products')}
+            onBack={() => setCurrentPage('products')}
+          />
+        )}
+        {currentPage === 'checkout' && (
+          <CheckoutPage
+            onPlaceOrder={handlePlaceOrder}
+            onBackToCart={() => setCurrentPage('cart')}
+          />
+        )}
+        {currentPage === 'order-confirmation' && (
+          <OrderConfirmationPage
+            orderId={orderId}
+            onContinueShopping={() => setCurrentPage('products')}
+            total={150.00}
+          />
+        )}
       </CartProvider>
     </AuthProvider>
   );
