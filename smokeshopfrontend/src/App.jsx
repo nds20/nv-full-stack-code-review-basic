@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import AgeGate from './components/AgeGate';
@@ -8,11 +8,32 @@ import ProductDetailPage from './components/ProductDetailPage';
 import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
 import OrderConfirmationPage from './components/OrderConfirmationPage';
+import AdminLogin from './components/admin/AdminLogin';
+import AdminDashboard from './components/admin/AdminDashboard';
+import { isAdminLoggedIn } from './services/adminApi';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('agegate');
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [orderId, setOrderId] = useState(null);
+
+  // The store admin lives at #/admin so it can be bookmarked without
+  // changing the shopper flow.
+  useEffect(() => {
+    if (window.location.hash.startsWith('#/admin')) {
+      setCurrentPage(isAdminLoggedIn() ? 'admin' : 'admin-login');
+    }
+  }, []);
+
+  const goAdmin = () => {
+    window.location.hash = '#/admin';
+    setCurrentPage(isAdminLoggedIn() ? 'admin' : 'admin-login');
+  };
+
+  const exitAdmin = () => {
+    window.location.hash = '';
+    setCurrentPage('products');
+  };
 
   const handleAgeVerify = (zip) => {
     console.log('Age verified with ZIP:', zip);
@@ -61,6 +82,7 @@ export default function App() {
             onBack={() => setCurrentPage('agegate')}
             cartCount={0}
             onCart={() => setCurrentPage('cart')}
+            onAdmin={goAdmin}
           />
         )}
         {currentPage === 'product-detail' && selectedProductId && (
@@ -89,6 +111,18 @@ export default function App() {
             orderId={orderId}
             onContinueShopping={() => setCurrentPage('products')}
             total={150.00}
+          />
+        )}
+        {currentPage === 'admin-login' && (
+          <AdminLogin
+            onSuccess={() => setCurrentPage('admin')}
+            onBack={exitAdmin}
+          />
+        )}
+        {currentPage === 'admin' && (
+          <AdminDashboard
+            onExit={exitAdmin}
+            onUnauthorized={() => setCurrentPage('admin-login')}
           />
         )}
       </CartProvider>

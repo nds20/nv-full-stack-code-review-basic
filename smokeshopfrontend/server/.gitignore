@@ -1,0 +1,4 @@
+node_modules/
+# Runtime product catalog (auto-created from data/products.seed.json on first run)
+data/products.json
+data/products.json.tmp

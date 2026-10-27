@@ -1,0 +1,1 @@
+{"dependencies":{"express":"^4.21.2","multer":"^2.0.1"},"description":"Smoke Shop product API + admin backend (lives alongside the React frontend in smokeshopfrontend/)","main":"index.js","name":"smoke-shop-server","private":true,"scripts":{"start":"node index.js"},"version":"1.0.0"}
