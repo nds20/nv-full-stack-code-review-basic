@@ -1,3 +1,4 @@
+# deploy trigger
 # Smoke Shop — Cloudflare Worker configuration.
 #
 # This project deploys as a Worker with static assets (not a Pages
