@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Smoke Shop - 824 AI Engine (static mirror)">
+<title>Checkout · Smoke Shop</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell header-in">
+    <a class="brand" href="index.html">Smoke Shop <span>824</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="products.html">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html" aria-current="page">Cart<span class="cart-badge" data-cart-count hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+<main class="shell">
+  <h1 style="margin:26px 0 0;">Checkout</h1>
+  <div class="checkout-grid">
+    <form id="checkoutForm" novalidate>
+      <section class="co-section" aria-labelledby="co-delivery">
+        <h2 id="co-delivery">Delivery Information</h2>
+        <div class="field"><label for="fullName">Full Name</label><input id="fullName" type="text" autocomplete="name" placeholder="Enter your full name" required></div>
+        <div class="field"><label for="phone">Phone Number</label><input id="phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567" required></div>
+        <div class="field"><label for="address">Delivery Address</label><input id="address" type="text" autocomplete="street-address" placeholder="123 Main St, Apt 4B" required></div>
+        <div class="co-2col">
+          <div class="field"><label for="city">City</label><input id="city" type="text" autocomplete="address-level2" placeholder="Enter your city" required></div>
+          <div class="field"><label for="zip">ZIP Code</label><input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="12345" required></div>
+        </div>
+        <div class="field"><label for="notes">Delivery Instructions (Optional)</label><textarea id="notes" rows="3" maxlength="300" placeholder="Add any delivery notes or instructions..."></textarea></div>
+      </section>
+
+      <section class="co-section" aria-labelledby="co-payment">
+        <h2 id="co-payment">Payment Method</h2>
+        <p class="pay-note">All transactions are secure and encrypted.</p>
+        <div class="field">
+          <label><input type="radio" name="paymethod" checked style="width:auto;"> Credit Card</label>
+          <p class="form-note">Visa - Mastercard - Amex - Discover</p>
+        </div>
+        <div class="field"><label for="cardNumber">Card Number</label><input id="cardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" required></div>
+        <div class="co-2col">
+          <div class="field"><label for="expiry">Expiration Date</label><input id="expiry" type="text" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / YY" required></div>
+          <div class="field"><label for="cvv">CVV</label><input id="cvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="123" required></div>
+        </div>
+        <p class="form-note">Demo checkout — no real payment is processed and no card details leave your browser.</p>
+      </section>
+
+      <p class="form-error" id="coError" role="alert" hidden></p>
+      <div class="tbd-note" id="coTbdNote" hidden>
+        Your cart includes <strong>Price TBD</strong> item(s) with no confirmed price, so this
+        order cannot be placed. Go back to the cart and remove them — no price has been
+        estimated for them.
+      </div>
+      <button class="btn" type="submit" id="placeOrderBtn" style="width:100%;height:54px;font-size:1.1rem;">🔒 Place Order</button>
+      <p style="margin-top:14px;"><a class="text-link" href="cart.html">← Back to Cart</a></p>
+    </form>
+
+    <aside class="summary">
+      <h2>Order Summary</h2>
+      <div id="coItems"></div>
+      <div class="sum-row"><span>Subtotal</span><span id="coSubtotal">$0.00</span></div>
+      <div class="sum-row"><span>Discount</span><span id="coDiscount">$0.00</span></div>
+      <div class="sum-row"><span>Taxes</span><span id="coTaxes">$0.00</span></div>
+      <div class="sum-row total"><span>Total</span><span id="coTotal">$0.00</span></div>
+      <p class="form-note" id="coPartialNote" hidden>Totals cover priced items only.</p>
+    </aside>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="shell">
+    <p class="age-note">You must be 21 or older to purchase products from this site. Please consume responsibly.</p>
+    <nav aria-label="Footer">
+      <a href="index.html">Home</a>
+      <a href="products.html">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html">Cart</a>
+      <a href="age-gate.html">Age Verification</a>
+    </nav>
+    <p class="fine">Static mirror of the Smoke Shop. Prices shown only where confirmed; everything else is listed as Price TBD.</p>
+  </div>
+</footer>
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  if (cartIsEmpty()) { window.location.href = 'cart.html'; }
+
+  var t = cartTotals();
+  document.getElementById('coItems').innerHTML = getCart().map(function (line) {
+    var p = getProduct(line.slug);
+    if (!p) return '';
+    var right = p.price != null ? money(p.price * line.qty) : 'Price TBD';
+    return '<div class="sum-item"><span>' + p.name + ' × ' + line.qty + '</span><span>' + right + '</span></div>';
+  }).join('');
+  document.getElementById('coSubtotal').textContent = money(t.subtotal);
+  document.getElementById('coDiscount').textContent = money(t.discount);
+  document.getElementById('coTaxes').textContent = money(t.taxes);
+  document.getElementById('coTotal').textContent = money(t.total);
+  document.getElementById('coPartialNote').hidden = !t.hasTbd;
+  document.getElementById('coTbdNote').hidden = !t.hasTbd;
+  if (t.hasTbd) document.getElementById('placeOrderBtn').disabled = true;
+
+  document.getElementById('checkoutForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var err = document.getElementById('coError');
+    var required = ['fullName', 'phone', 'address', 'city', 'zip', 'cardNumber', 'expiry', 'cvv'];
+    var missing = required.some(function (id) { return !document.getElementById(id).value.trim(); });
+    var zip = document.getElementById('zip').value.trim();
+    if (missing) {
+      err.textContent = 'Please fill in all required fields.';
+      err.hidden = false;
+      return;
+    }
+    if (!/^\d{5}$/.test(zip)) {
+      err.textContent = 'Enter a 5-digit ZIP code.';
+      err.hidden = false;
+      return;
+    }
+    if (cartTotals().hasTbd) {
+      err.textContent = 'Remove Price TBD items from your cart before placing an order.';
+      err.hidden = false;
+      return;
+    }
+    err.hidden = true;
+    var totals = cartTotals();
+    localStorage.setItem('ss_last_order', JSON.stringify({
+      id: 'ORD-' + Date.now(),
+      total: totals.total
+    }));
+    clearCart();
+    window.location.href = 'order-confirmation.html';
+  });
+</script>
+</body>
+</html>
