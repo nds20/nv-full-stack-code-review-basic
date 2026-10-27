@@ -1,4 +1,63 @@
-export default function OrderConfirmationPage({ orderId = '12345', onContinueShopping = () => console.log('continue'), total = 120.50 }) {
+import { useEffect, useRef, useState } from 'react';
+import { fetchOrderStatus } from '../services/ordersApi';
+
+const PAYMENT_LABELS = {
+  paid: { text: 'Paid ✓', className: 'oc-status oc-status--paid' },
+  pending: { text: 'Payment pending…', className: 'oc-status' },
+  unpaid: { text: 'Unpaid', className: 'oc-status' },
+  payment_failed: { text: 'Payment failed', className: 'oc-status oc-status--failed' },
+};
+
+/**
+ * Confirmation for a placed order. When the order lives on the server
+ * (orderAccessToken present — issued by POST /api/orders), this also
+ * polls the order-status endpoint so a customer returning from Stripe's
+ * hosted checkout sees the payment state settle from "pending" to
+ * "paid" once the webhook lands. Locally queued orders (static demo, no
+ * API) render exactly as before, with no payment row.
+ */
+export default function OrderConfirmationPage({
+  orderId = '12345',
+  orderAccessToken = null,
+  onContinueShopping = () => console.log('continue'),
+  total = 120.50,
+}) {
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const attempts = useRef(0);
+
+  useEffect(() => {
+    const numericId = Number(String(orderId).replace(/^ORD-/, ''));
+    if (!orderAccessToken || !Number.isFinite(numericId)) return undefined;
+    let cancelled = false;
+    let timer = null;
+
+    const poll = async () => {
+      try {
+        const data = await fetchOrderStatus(numericId, orderAccessToken);
+        if (cancelled) return;
+        if (data && data.paymentStatus) setPaymentStatus(data.paymentStatus);
+        attempts.current += 1;
+        // Stop once the payment resolves, or after ~30s of trying.
+        const settled = data && (data.paymentStatus === 'paid' || data.paymentStatus === 'payment_failed');
+        if (!settled && attempts.current < 10) {
+          timer = setTimeout(poll, 3000);
+        }
+      } catch {
+        if (!cancelled && attempts.current < 10) {
+          attempts.current += 1;
+          timer = setTimeout(poll, 3000);
+        }
+      }
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [orderId, orderAccessToken]);
+
+  const payment = paymentStatus ? PAYMENT_LABELS[paymentStatus] : null;
+
   return (
     <div className="oc-page">
       <style>{css}</style>
@@ -10,6 +69,16 @@ export default function OrderConfirmationPage({ orderId = '12345', onContinueSho
           <div><strong>Order #:</strong> {orderId}</div>
           <div><strong>Total:</strong> ${total.toFixed(2)}</div>
           <div><strong>Status:</strong> <span className="oc-status">Processing</span></div>
+          {orderAccessToken && (
+            <div>
+              <strong>Payment:</strong>{' '}
+              {payment ? (
+                <span className={payment.className}>{payment.text}</span>
+              ) : (
+                <span className="oc-status">Checking…</span>
+              )}
+            </div>
+          )}
         </div>
         <p className="oc-message">You will receive an email confirmation shortly with tracking information.</p>
         <button className="oc-btn" onClick={onContinueShopping}>Continue Shopping</button>
@@ -27,6 +96,8 @@ const css = `
 .oc-details { margin: 30px 0; padding: 20px; background: #f1f3ef; border-radius: 8px; text-align: left; }
 .oc-details div { margin: 10px 0; font-size: 1rem; }
 .oc-status { color: #2d6a3e; font-weight: 600; }
+.oc-status--paid { color: #2d6a3e; }
+.oc-status--failed { color: #b3261e; }
 .oc-message { margin: 20px 0; color: #666b67; line-height: 1.6; }
 .oc-btn { padding: 14px 40px; background: #2d6a3e; color: #fff; border: none; border-radius: 6px; font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 20px; }
 .oc-btn:hover { background: #22532f; }

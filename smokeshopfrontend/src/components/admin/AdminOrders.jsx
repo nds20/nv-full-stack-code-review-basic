@@ -2,6 +2,15 @@ import React from 'react';
 
 const money = (n) => `$${Number(n || 0).toFixed(2)}`;
 
+// Stripe payment lifecycle on the order (paymentStatus from the API;
+// orders from before Stripe read as 'unpaid').
+const PAYMENT_CHIPS = {
+  paid: { label: 'Paid', className: 'ao-paychip ao-paychip--paid' },
+  pending: { label: 'Payment pending', className: 'ao-paychip ao-paychip--pending' },
+  unpaid: { label: 'Unpaid', className: 'ao-paychip ao-paychip--unpaid' },
+  payment_failed: { label: 'Payment failed', className: 'ao-paychip ao-paychip--failed' },
+};
+
 function formatWhen(iso) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString();
@@ -52,6 +61,10 @@ export default function AdminOrders({
                 <span className={`ao-pill${isNew ? ' ao-pill--new' : ''}`}>
                   {isNew ? '● New' : 'Seen'}
                 </span>
+                {(() => {
+                  const chip = PAYMENT_CHIPS[order.paymentStatus || 'unpaid'] || PAYMENT_CHIPS.unpaid;
+                  return <span className={chip.className}>{chip.label}</span>;
+                })()}
                 <span className="ao-when">{formatWhen(order.createdAt)}</span>
                 {isNew && (
                   <button
@@ -125,6 +138,11 @@ const css = `
 .ao-card-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
 .ao-pill { font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid #4a4a4a; color: #bdbdbd; }
 .ao-pill--new { border-color: #2f7a35; color: #9fe8a4; background: rgba(47,122,53,.15); }
+.ao-paychip { font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid #4a4a4a; color: #bdbdbd; }
+.ao-paychip--paid { border-color: #2f7a35; color: #9fe8a4; background: rgba(47,122,53,.15); }
+.ao-paychip--pending { border-color: #a06a12; color: #ffd98a; background: rgba(160,106,18,.15); }
+.ao-paychip--unpaid { border-color: #4a4a4a; color: #bdbdbd; }
+.ao-paychip--failed { border-color: #d9534f; color: #ff7b75; background: rgba(217,83,79,.10); }
 .ao-when { color: #8a8a8a; font-size: .85rem; }
 .ao-btn {
   margin-left: auto; padding: 7px 14px; font: inherit; font-size: .9rem; font-weight: 600;

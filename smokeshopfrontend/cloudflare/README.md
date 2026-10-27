@@ -226,6 +226,49 @@ the same for `seed.sql`).
   Photos are not deleted when a product is deleted (same policy as the
   Node server); remove unwanted objects from the bucket manually.
 
+## Stripe payments (optional)
+
+Real card payments via **Stripe Checkout** (Stripe-hosted — card data
+never touches this code), implementing the identical contract as the
+Node server. Off until configured; while off, `/api/payments/config`
+reports `stripeEnabled: false`, the checkout-session endpoint answers
+`503`, and the shop runs exactly as it does today.
+
+1. **Database step (once):** in the D1 console for your existing
+   database, run `migration-stripe.sql` from this folder — it adds the
+   `payment_status`, `stripe_session_id`, `stripe_payment_intent_id` and
+   `access_token` columns to `orders`. (Fresh databases get them from
+   `schema.sql` directly.) Run the statements one at a time if the
+   console balks at the whole file; a "duplicate column name" error on a
+   re-run just means it already landed.
+2. **Secrets:** your Worker → **Settings → Variables and Secrets** → add
+   `STRIPE_SECRET_KEY` as a **secret**, using a **test-mode** key
+   (`sk_test_...`) first. (On a Pages project: Settings → Environment
+   variables, Production.) Never commit keys to the repo.
+3. **Webhook:** in the Stripe Dashboard (test mode) → **Developers →
+   Webhooks → Add endpoint**:
+   - URL: `https://www.beastmode82420.com/api/stripe/webhook`
+   - Events: `checkout.session.completed`, `checkout.session.expired`,
+     `checkout.session.async_payment_failed`
+   - After creating it, reveal its **Signing secret** (`whsec_...`) and
+     add it in the Worker settings as `STRIPE_WEBHOOK_SECRET` (secret).
+4. **Redeploy** so the new secrets take effect, then verify:
+   - `/api/payments/config` → `{"stripeEnabled":true}`
+   - Place a test order and pay with Stripe's test card
+     `4242 4242 4242 4242` (any future expiry, any CVC). You should land
+     back on the confirmation page, watch **Payment** settle to **Paid**,
+     and see the order badged **Paid** in the admin Orders tab.
+   - Only switch to a live (`sk_live_...`) key — and create the matching
+     live-mode webhook — once test mode works end to end.
+
+How it fits together: placing an order stores it `paymentStatus:
+'unpaid'` and returns a per-order `accessToken` to the buyer;
+`POST /api/orders/:id/checkout` (token required) creates the Checkout
+Session from the **stored** items/totals and marks it `pending`; the
+signature-verified webhook marks it `paid` / back to `unpaid` /
+`payment_failed`. The buyer-facing status probe is
+`GET /api/orders/:id/status?token=...`.
+
 ## Troubleshooting
 
 - **`/api/*` returns 500** — the `DB` binding is missing or the schema
