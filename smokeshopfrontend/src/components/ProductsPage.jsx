@@ -147,6 +147,13 @@ export default function ProductsPage({
                         background: `linear-gradient(135deg, ${product.tile[0]}, ${product.tile[1]})`
                       }}
                     >
+                      {product.image && (
+                        <img
+                          className="pp-thumb-img"
+                          src={product.image}
+                          alt={product.name}
+                        />
+                      )}
                       <button
                         className="pp-view-btn"
                         onClick={() => onProductSelect(product.id)}
@@ -228,6 +235,8 @@ const css = `
 .pp-card { background: #1a1a1a; border-radius: 8px; overflow: hidden; transition: transform 0.2s; }
 .pp-card:hover { transform: translateY(-4px); }
 .pp-thumb { height: 200px; display: grid; place-items: center; position: relative; }
+.pp-thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pp-view-btn { position: relative; }
 .pp-view-btn { padding: 10px 20px; background: rgba(212, 242, 58, 0.9); color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
 .pp-info { padding: 15px; }
 .pp-category { margin: 0; font-size: 0.8rem; color: #d4f23a; text-transform: uppercase; }
