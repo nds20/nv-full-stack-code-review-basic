@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-const SAMPLE_PRODUCTS = [
+// The last-known-good catalog, kept in the bundle so the storefront always
+// renders — including on the static deploy where no API server is running.
+// When the product API (see ../server/) is reachable it replaces this list,
+// and anything the admin adds there shows up here with no code changes.
+const FALLBACK_PRODUCTS = [
   { id: 1, name: 'Muha Meds Runtz 2G', subtitle: 'THC Vape Disposable · Candy-Sweet Fruity Runtz', category: 'vapes', type: 'Hybrid', thc: null, strength: 'THC TBD', price: 17.49, unit: '2g', effects: ['Relaxed', 'Happy'], tile: ['#ff8c1a', '#f5b921'], image: '/images/products/muha-runtz-2g.svg' },
   { id: 2, name: 'Muha Meds Galactic Diesel 2G', subtitle: 'THC Vape Disposable · Pungent Earthy Diesel · Postless Ceramic, Rechargeable, LED Display', category: 'vapes', type: 'Hybrid', thc: null, strength: 'THC TBD', price: null, unit: '2g', effects: ['Heavy', 'Hazy'], tile: ['#a855f7', '#7c3aed'], image: '/images/products/muha-galactic-diesel-2g.svg' },
   { id: 3, name: 'Pack Man 2G Combo', subtitle: 'THC Vape Dual-Chamber Disposable · Watermelon Frost + Fruit Loops · LED Screen, USB-C, Draw-Activated', category: 'vapes', type: 'Indica/Hybrid', thc: null, strength: 'THC TBD', price: null, unit: '2g', effects: [], tile: ['#14532d', '#052e16'], image: '/images/products/packman-2g-combo.svg' },
@@ -9,26 +13,32 @@ const SAMPLE_PRODUCTS = [
 ];
 
 export const useProducts = () => {
-  const [products, setProducts] = useState(SAMPLE_PRODUCTS);
+  const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      // TODO: Call backend API
-      // const response = await fetch('/api/products');
-      // if (!response.ok) throw new Error('Failed to fetch products');
-      // const data = await response.json();
-      // setProducts(data);
-      setProducts(SAMPLE_PRODUCTS);
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setProducts(data);
+      }
     } catch (err) {
+      // API unreachable (e.g. static hosting): keep showing the fallback
+      // catalog instead of an empty shop.
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const getProduct = (id) => products.find((p) => p.id === Number(id));
 

@@ -9,6 +9,7 @@ export default function ProductsPage({
   onSearch = () => {},
   onAccount = () => {},
   onCart = () => {},
+  onAdmin = () => {},
 }) {
   const { products } = useProducts();
   const { addToCart } = useCart();
@@ -55,6 +56,7 @@ export default function ProductsPage({
               🛒
               {cartCount > 0 && <span className="pp-badge">{cartCount}</span>}
             </button>
+            <button onClick={onAdmin} aria-label="Store admin" title="Store admin">⚙️</button>
           </div>
         </div>
       </header>
