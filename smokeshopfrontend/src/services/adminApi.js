@@ -58,6 +58,41 @@ export const updateProduct = (id, body) =>
 export const deleteProduct = (id) =>
   adminFetch(`/api/products/${id}`, { method: 'DELETE' });
 
+// ----- Admin orders (alerts) --------------------------------------------------
+// The list endpoint returns { orders, newCount } — orders newest-first, and
+// newCount is how many are still unacknowledged (status 'new').
+
+export const fetchAdminOrders = () => adminFetch('/api/admin/orders');
+
+export const fetchAdminOrder = (id) => adminFetch(`/api/admin/orders/${id}`);
+
+export const markOrderSeen = (id) =>
+  adminFetch(`/api/admin/orders/${id}/seen`, { method: 'PATCH' });
+
+// ----- First-run admin setup ----------------------------------------------------
+
+export async function fetchSetupStatus() {
+  const response = await fetch('/api/admin/setup-status');
+  if (!response.ok) throw new Error(`Setup status failed (${response.status})`);
+  return response.json();
+}
+
+export async function setupAdmin(username, password) {
+  const response = await fetch('/api/admin/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || 'Could not create the admin account.');
+  }
+  // Setup returns a session token, just like login — the new admin is
+  // signed in immediately.
+  setAdminToken(data.token);
+  return data;
+}
+
 /**
  * Build the request body for create/update. When a photo file is attached we
  * send multipart/form-data (numbers/arrays are stringified — the server

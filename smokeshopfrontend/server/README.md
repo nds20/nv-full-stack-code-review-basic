@@ -2,7 +2,8 @@
 
 A small Node/Express service that lives **inside `smokeshopfrontend/`**, next
 to the React app it feeds. It replaces the hardcoded product list with a real
-backend store and a login-gated admin area for managing the catalog.
+backend store and a login-gated admin area for managing the catalog, and it
+receives the shop's orders so the admin page can alert on new ones.
 
 ## Why this exists (and why Node, here)
 
@@ -30,17 +31,41 @@ product photos, and the built storefront — from one port.
 ## Configure
 
 All configuration is via environment variables (see `.env.example`).
-**No credentials are hardcoded anywhere.**
+**No real credentials are hardcoded anywhere** (the built-in demo login
+below is a labeled fallback, not a credential).
 
 | Variable                   | Purpose                                                        |
 | -------------------------- | -------------------------------------------------------------- |
 | `PORT`                     | Port to listen on (default `4000`)                             |
-| `SMOKESHOP_ADMIN_USER`     | Admin username. Required for admin login.                      |
-| `SMOKESHOP_ADMIN_PASSWORD` | Admin password. Required for admin login.                      |
+| `SMOKESHOP_ADMIN_USER`     | Admin username (optional sign-in method — see below).          |
+| `SMOKESHOP_ADMIN_PASSWORD` | Admin password (optional sign-in method — see below).          |
 | `SMOKESHOP_ADMIN_SECRET`   | Recommended. Signs admin session tokens (HMAC-SHA256, 8h TTL). |
 
-If the admin credentials are not set, the catalog still works but admin
-login responds `503` with an explanation instead of guessing a password.
+## Admin sign-in: env vars, setup account, or demo login
+
+There are three ways to sign in to the admin area, checked in this order:
+
+1. **Environment variables** — if `SMOKESHOP_ADMIN_USER` /
+   `SMOKESHOP_ADMIN_PASSWORD` are set and match, you're in.
+2. **A stored account** — created once via the setup flow below; the
+   password is kept server-side as a scrypt hash (`crypto.scrypt`, random
+   per-account salt) in `data/admin-accounts.json`. Never plaintext.
+3. **The demo login** — **DEMO ONLY**: username `admin`, password
+   `admin123`. It is accepted *only while neither of the above exists*, so
+   the admin area can be tried immediately on a fresh checkout. The server
+   logs a loud startup warning while it is active, and it **stops working
+   the moment a real account is created or env credentials are set**. Do
+   not rely on it for anything real.
+
+### First-run setup (creating the first admin account)
+
+Open the admin login screen (`/#/admin`). If no stored account exists yet,
+it offers **"Create admin account"**: pick a username and a password of at
+least 8 characters and you are signed in with a real account (which also
+switches the demo login off). The backing endpoints are
+`GET /api/admin/setup-status` and `POST /api/admin/setup`; setup only ever
+creates the **first** account — once one exists, `POST /api/admin/setup`
+responds `409`.
 
 ## Data
 
@@ -49,20 +74,58 @@ login responds `503` with an explanation instead of guessing a password.
   products that used to be hardcoded in the React app.
 - Admin changes (create / edit / delete) are written through to that file,
   so they survive restarts.
+- Orders live in `data/orders.json` and admin accounts in
+  `data/admin-accounts.json` (both git-ignored runtime files, same
+  write-through pattern).
 - Data honesty: **price and THC stay `null` ("TBD") unless the admin enters
   real values.** The API rejects negative prices and THC outside 0–100.
 
 ## API
 
-| Method   | Route               | Auth  | Notes                                             |
-| -------- | ------------------- | ----- | ------------------------------------------------- |
-| `GET`    | `/api/health`       | —     | Liveness check                                    |
-| `GET`    | `/api/products`     | —     | Full catalog                                      |
-| `GET`    | `/api/products/:id` | —     | One product                                       |
-| `POST`   | `/api/admin/login`  | —     | `{ username, password }` → `{ token, expiresAt }` |
-| `POST`   | `/api/products`     | Admin | JSON, or multipart with a `photo` file            |
-| `PUT`    | `/api/products/:id` | Admin | JSON, or multipart with a `photo` file            |
-| `DELETE` | `/api/products/:id` | Admin | Removes the product from the catalog              |
+| Method   | Route                        | Auth  | Notes                                                 |
+| -------- | ---------------------------- | ----- | ----------------------------------------------------- |
+| `GET`    | `/api/health`                | —     | Liveness check                                        |
+| `GET`    | `/api/products`              | —     | Full catalog                                          |
+| `GET`    | `/api/products/:id`          | —     | One product                                           |
+| `POST`   | `/api/orders`                | —     | Place an order (validated, totals recomputed)         |
+| `POST`   | `/api/admin/login`           | —     | `{ username, password }` → `{ token, expiresAt, authSource }` |
+| `GET`    | `/api/admin/setup-status`    | —     | `{ setupRequired, envConfigured, dummyActive }`       |
+| `POST`   | `/api/admin/setup`           | —     | Create the FIRST admin account (409 after that)       |
+| `POST`   | `/api/products`              | Admin | JSON, or multipart with a `photo` file                |
+| `PUT`    | `/api/products/:id`          | Admin | JSON, or multipart with a `photo` file                |
+| `DELETE` | `/api/products/:id`          | Admin | Removes the product from the catalog                  |
+| `GET`    | `/api/admin/orders`          | Admin | `{ orders, newCount }`, newest first                  |
+| `GET`    | `/api/admin/orders/:id`      | Admin | One order                                             |
+| `PATCH`  | `/api/admin/orders/:id/seen` | Admin | Acknowledge an order (`new` → `seen`)                 |
+
+## Orders and admin alerts
+
+- The storefront checkout posts each placed order to `POST /api/orders`.
+  The server validates it against the catalog, **recomputes subtotal, tax
+  (10.2%), and total itself**, and stores it with status `new`. The shop's
+  Price-TBD rule is enforced here as well: an order containing a product
+  whose price is `null` is rejected with `400`.
+- Only the delivery details the checkout form collects are stored, plus —
+  for card payments — the card's **last four digits only**. Full card
+  numbers, expiry, and CVV are never stored or logged.
+- Order lifecycle: `new` → `seen` (via the "Mark seen" button, which calls
+  `PATCH /api/admin/orders/:id/seen`). Acknowledging is idempotent and
+  stamps `seenAt`.
+- **Alerts are in-admin**: the dashboard has an **Orders** tab listing
+  orders newest-first, and a badge on that tab shows how many orders are
+  still `new`. While the dashboard is open it polls the orders endpoint
+  every 15 seconds, so new orders appear (and bump the badge) without a
+  refresh. Optionally, the Orders tab can enable **browser notifications**
+  (Notification API, permission-based) so a genuinely new order pops up
+  while the admin page is open; the initial backlog never triggers popups.
+- If the API is unreachable at checkout time (e.g. the static Cloudflare
+  demo), checkout completes exactly as before and the order is kept in a
+  local pending list (`localStorage`) instead of being sent — customers
+  are never blocked by a missing server. The `static/` mirror's checkout
+  remains local-only by design.
+- **Not included:** email/SMS/push alerts to a phone. Those need an
+  external provider (and credentials) and are deliberately out of scope;
+  alerts here mean the admin page itself.
 
 ## Photos
 
@@ -76,10 +139,11 @@ that folder manually.
 ## The admin UI
 
 Open the shop and click the ⚙️ button in the products header, or go
-directly to `/#/admin`. Sign in with the env-configured credentials to add,
-edit, and delete products — including photo upload — with no code changes.
-New products appear in the listing and detail pages automatically because
-the storefront now reads the catalog from this API.
+directly to `/#/admin`. Sign in (see "Admin sign-in" above) to add, edit,
+and delete products — including photo upload — and to watch incoming
+orders in the **Orders** tab, with no code changes. New products appear in
+the listing and detail pages automatically because the storefront now
+reads the catalog from this API.
 
 > Static-hosting note: the Cloudflare static deploy has no server behind
 > it, so the shop there keeps using the catalog snapshot bundled in

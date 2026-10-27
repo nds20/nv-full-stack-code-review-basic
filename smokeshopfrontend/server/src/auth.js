@@ -52,6 +52,24 @@ function checkCredentials(username, password) {
   );
 }
 
+// ----- Demo fallback ---------------------------------------------------------
+// DEMO ONLY. When no real admin credentials exist anywhere — no env vars
+// and no stored account created via the setup flow — the server accepts
+// this built-in demo login so the admin area can be tried immediately
+// (username "admin", password "admin123"). The moment real credentials
+// exist, the demo login stops working (the login handler in index.js only
+// consults it when nothing else is configured). It is a convenience for
+// local demos, never a production credential.
+const DUMMY_ADMIN_USER = 'admin';
+const DUMMY_ADMIN_PASSWORD = 'admin123';
+
+function checkDummyCredentials(username, password) {
+  return (
+    timingSafeStringEqual(username || '', DUMMY_ADMIN_USER) &&
+    timingSafeStringEqual(password || '', DUMMY_ADMIN_PASSWORD)
+  );
+}
+
 function issueToken(username) {
   const payload = { sub: username, exp: Date.now() + TOKEN_TTL_MS };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -89,6 +107,9 @@ function requireAdmin(req, res, next) {
 module.exports = {
   isConfigured,
   checkCredentials,
+  DUMMY_ADMIN_USER,
+  DUMMY_ADMIN_PASSWORD,
+  checkDummyCredentials,
   issueToken,
   verifyToken,
   requireAdmin,
