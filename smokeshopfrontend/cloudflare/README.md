@@ -24,6 +24,13 @@ Cloudflare dashboard.
 > check **Pages project → Settings → Build → Root directory** if your
 > deployment behaves differently.
 
+> **Is your project a Worker instead of a Pages project?** If the
+> dashboard says *"Bindings cannot be added to a Worker that only has
+> static assets"*, your deployment is a Worker with static assets:
+> `functions/` never runs there and the steps below won't take effect.
+> Use the Worker packaging instead — skip to
+> [If your project is a Worker (not Pages)](#if-your-project-is-a-worker-not-pages).
+
 ## Step-by-step setup
 
 ### 1. Create the D1 database
@@ -110,6 +117,70 @@ push any commit.
    clears it.
 5. (If R2 is bound) add a product with a photo in the admin; its image
    URL will be `/api/photos/products/<id>-<name>.<ext>` and should load.
+
+## If your project is a Worker (not Pages)
+
+Cloudflare has two ways to host a site from a Git repo, and they are
+not interchangeable:
+
+- A **Pages project** runs the `functions/` folder — that's the setup
+  above.
+- A **Worker with static assets** serves files only. Until it has a
+  script, there is nothing to attach bindings to — the dashboard says
+  *"Bindings cannot be added to a Worker that only has static assets"* —
+  and the `functions/` folder is ignored entirely.
+
+If your shop is the Worker kind, this repo ships a Worker packaging of
+the same API: [`../worker/index.js`](../worker/index.js) dispatches
+`/api/*` requests to the same handler code the Pages routes use, and
+[`../wrangler.toml`](../wrangler.toml) declares the script, the static
+assets, and both storage bindings — so on this path there is **no
+manual binding step in the dashboard**. The `functions/` folder and
+the Node server stay in the repo untouched (the Functions remain ready
+if the project ever moves to Pages).
+
+### Worker setup
+
+1. **Create the D1 database and load it** — exactly steps 1–3 above:
+   create `smokeshop-db`, then run `schema.sql` and `seed.sql` in its
+   console.
+2. **(Optional) Create the R2 bucket** — step 4 above. Name it
+   `smokeshop-product-photos` (the name already written in
+   `wrangler.toml`), or edit `bucket_name` in `wrangler.toml` to match
+   a bucket you created under a different name.
+3. **Open `wrangler.toml` and set your two values:**
+   - `name` — wrangler.toml's name must exactly match the project name shown in Workers & Pages — if yours differs, edit that one line before deploying.
+   - `database_id` — open your D1 database's page in the dashboard,
+     copy the **Database ID** shown there, and replace
+     `REPLACE_WITH_YOUR_D1_DATABASE_ID` with it.
+   Those are the only edits: the bindings (`DB`, `PRODUCT_PHOTOS`) are
+   declared in `wrangler.toml`, so the deploy creates them — do **not**
+   try to add them under Settings → Bindings first; that dashboard
+   message is what this packaging replaces.
+4. **Check the Workers Builds settings** (Workers & Pages → your
+   project → **Settings → Build**): root directory `smokeshopfrontend`,
+   build command `npm run build`, deploy command
+   `npx wrangler deploy`. A fresh Workers Git setup normally has these
+   values already; the deploy command is the one that matters, because
+   it is what reads `wrangler.toml`.
+5. **(Optional) Admin secrets** — your Worker → **Settings → Variables
+   and Secrets**: add `SMOKESHOP_ADMIN_USER`,
+   `SMOKESHOP_ADMIN_PASSWORD` and `SMOKESHOP_ADMIN_SECRET` as secrets,
+   or skip them and use the demo login / first-run account setup,
+   exactly as described in step 6 above.
+6. **Redeploy** — push a commit, or use Deployments → Retry. The new
+   deployment carries the script and the bindings from `wrangler.toml`.
+7. **Verify** — the same checks as step 8 above: `/api/health` returns
+   `{"ok":true}`, `/api/products` lists the 5 products, the admin
+   sign-in works (demo login or Create admin account), a test order
+   appears in the admin **Orders** tab, and — if R2 is bound — a photo
+   upload from the admin loads at its `/api/photos/...` URL.
+
+A local dry run is possible before deploying: from `smokeshopfrontend/`,
+`npx wrangler dev` serves the Worker, the static build, and emulated
+local D1/R2 together (apply the schema to the local database first with
+`npx wrangler d1 execute DB --local --file=cloudflare/schema.sql` and
+the same for `seed.sql`).
 
 ## How storage maps to the API
 

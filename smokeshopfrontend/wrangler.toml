@@ -1,0 +1,50 @@
+# Smoke Shop — Cloudflare Worker configuration.
+#
+# This project deploys as a Worker with static assets (not a Pages
+# project): the Worker script in worker/index.js runs the shop's API —
+# the same handlers as functions/, imported unchanged — and the built
+# React app in ./build is served as static assets.
+#
+# TWO values below are yours to check before deploying; the walkthrough
+# is in cloudflare/README.md, section "If your project is a Worker
+# (not Pages)":
+#   1. `name` — must exactly match your Worker project name.
+#   2. `database_id` — your D1 database's ID (placeholder until filled).
+
+# MUST exactly match the project name shown in the Cloudflare dashboard
+# under Workers & Pages. If yours differs, edit this one line.
+name = "nv-full-stack-code-review-basic"
+
+main = "worker/index.js"
+compatibility_date = "2026-09-01"
+
+# The built storefront. `run_worker_first` sends every /api/* request to
+# the Worker script before the asset store is consulted, so API calls
+# always reach the code (including /api/photos/... for R2 uploads).
+[assets]
+directory = "./build"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# Product / order / admin-account data. Create the database once in the
+# dashboard (Storage & Databases -> D1 SQL Database), run
+# cloudflare/schema.sql and cloudflare/seed.sql in its console, then
+# paste the Database ID shown on the database's page here.
+[[d1_databases]]
+binding = "DB"
+database_name = "smokeshop-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Uploaded product photos. Create the bucket once in the dashboard
+# (R2 Object Storage) with exactly this name, or edit `bucket_name` to
+# match yours. Everything except photo uploads works without it.
+[[r2_buckets]]
+binding = "PRODUCT_PHOTOS"
+bucket_name = "smokeshop-product-photos"
+
+# Admin credentials (SMOKESHOP_ADMIN_USER / SMOKESHOP_ADMIN_PASSWORD /
+# SMOKESHOP_ADMIN_SECRET) are NOT set here. Add them as encrypted
+# secrets in the dashboard (your Worker -> Settings -> Variables and
+# Secrets) or with `wrangler secret put` — never commit real values.
+# Without them, the demo login (admin / admin123) stays active until a
+# real admin account is created, exactly as on the Node server.
