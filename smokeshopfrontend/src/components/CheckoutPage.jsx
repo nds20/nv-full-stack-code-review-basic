@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const SAMPLE_ITEMS = [
   { id: 101, name: "Lemon Cherry Gelato", subtitle: "Premium Flower", strength: "THC 24.7%", unit: "3.5g", price: 45, qty: 1, icon: "leaf", tile: "#eef2e9" },
@@ -66,6 +67,18 @@ export default function CheckoutPage({
   renderPayment,
 }) {
   const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", zip: "", notes: "", cardNumber: "", expiry: "", cvv: "" });
+  const { user } = useAuth();
+
+  // Signed-in customers get their name prefilled from their account
+  // profile (the checkout form has no email field, so the profile's
+  // name is the piece that applies). Only fills a still-empty field —
+  // never overwrites something the shopper typed.
+  useEffect(() => {
+    if (user && user.name) {
+      setForm((s) => (s.fullName ? s : { ...s, fullName: user.name }));
+    }
+  }, [user]);
+
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");

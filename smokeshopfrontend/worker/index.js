@@ -15,6 +15,9 @@
 //   GET    /api/products/:id             PUT  /api/products/:id       (admin)
 //                                        DELETE /api/products/:id     (admin)
 //   POST   /api/orders
+//   POST   /api/customers/register
+//   POST   /api/customers/login
+//   GET    /api/customers/me                                          (customer)
 //   POST   /api/admin/login
 //   GET    /api/admin/setup-status
 //   POST   /api/admin/setup
@@ -40,6 +43,9 @@ import {
   onRequestDelete as productDelete,
 } from '../functions/api/products/[id].js';
 import { onRequestPost as orderCreate } from '../functions/api/orders.js';
+import { onRequestPost as customerRegister } from '../functions/api/customers/register.js';
+import { onRequestPost as customerLogin } from '../functions/api/customers/login.js';
+import { onRequestGet as customerMe } from '../functions/api/customers/me.js';
 import { onRequestPost as adminLogin } from '../functions/api/admin/login.js';
 import { onRequestGet as adminSetupStatus } from '../functions/api/admin/setup-status.js';
 import { onRequestPost as adminSetup } from '../functions/api/admin/setup.js';
@@ -58,6 +64,9 @@ const ROUTES = [
     handlers: { GET: productGet, PUT: productUpdate, DELETE: productDelete },
   },
   { parts: ['api', 'orders'], handlers: { POST: orderCreate } },
+  { parts: ['api', 'customers', 'register'], handlers: { POST: customerRegister } },
+  { parts: ['api', 'customers', 'login'], handlers: { POST: customerLogin } },
+  { parts: ['api', 'customers', 'me'], handlers: { GET: customerMe } },
   { parts: ['api', 'admin', 'login'], handlers: { POST: adminLogin } },
   { parts: ['api', 'admin', 'setup-status'], handlers: { GET: adminSetupStatus } },
   { parts: ['api', 'admin', 'setup'], handlers: { POST: adminSetup } },

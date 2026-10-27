@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import AgeGate from './components/AgeGate';
 import LoginPage from './components/LoginPage';
+import SignupPage from './components/SignupPage';
 import ProductsPage from './components/ProductsPage';
 import ProductDetailPage from './components/ProductDetailPage';
 import CartPage from './components/CartPage';
@@ -43,7 +44,12 @@ export default function App() {
   };
 
   const handleLogin = (creds) => {
-    console.log('User logged in:', creds);
+    // Never log credentials — just note that a sign-in happened.
+    console.log('User logged in:', creds && creds.identifier);
+    setCurrentPage('products');
+  };
+
+  const handleSignUp = () => {
     setCurrentPage('products');
   };
 
@@ -88,7 +94,14 @@ export default function App() {
         {currentPage === 'login' && (
           <LoginPage
             onLogIn={handleLogin}
-            onCreateAccount={() => setCurrentPage('agegate')}
+            onCreateAccount={() => setCurrentPage('signup')}
+            onBack={() => setCurrentPage('agegate')}
+          />
+        )}
+        {currentPage === 'signup' && (
+          <SignupPage
+            onSignUp={handleSignUp}
+            onLogIn={() => setCurrentPage('login')}
             onBack={() => setCurrentPage('agegate')}
           />
         )}
