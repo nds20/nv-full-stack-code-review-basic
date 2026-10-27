@@ -9,7 +9,7 @@
 # is in cloudflare/README.md, section "If your project is a Worker
 # (not Pages)":
 #   1. `name` — must exactly match your Worker project name.
-#   2. `database_id` — your D1 database's ID (placeholder until filled).
+#   2. `database_id` — bb452b0e-8bfb-4042-8d08-4f8e902c8164
 
 # MUST exactly match the project name shown in the Cloudflare dashboard
 # under Workers & Pages. If yours differs, edit this one line.
