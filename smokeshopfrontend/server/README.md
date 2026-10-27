@@ -87,6 +87,33 @@ switches the demo login off). The backing endpoints are
 creates the **first** account — once one exists, `POST /api/admin/setup`
 responds `409`.
 
+## Customer accounts
+
+Shoppers get **real accounts** too — the storefront's Create Account and
+Log In forms call this API (the old client-side demo sign-in that
+"accepted" anything is gone):
+
+- `POST /api/customers/register` — `{ name, email, password }` (password
+  at least 8 characters). Responds `201` with a session token and the
+  new customer, including their **id**: ids increment from 1 and
+  **nothing is seeded**, so the first person to register is customer 1.
+  A duplicate email (compared case-insensitively) gets a `409`.
+- `POST /api/customers/login` — `{ email, password }` → token + profile.
+  Unknown email and wrong password both get the same generic `401`.
+- `GET /api/customers/me` — with the customer bearer token, returns the
+  profile; without one, `401`.
+
+Accounts live in `data/customers.json` (git-ignored), passwords only as
+scrypt salt/hash pairs (`src/customers.js`). Customer session tokens
+look like admin tokens but are a **separate audience**: they are signed
+with a random per-installation secret stored in that same data file
+(generated on first run, independent of the admin signing key) and carry
+a `kind: 'customer'` claim — a customer token never works on admin
+endpoints, and an admin token never works on customer endpoints.
+
+While signed in, checkout prefills the name field from the customer's
+profile. Order history is deliberately not part of this yet.
+
 ## Data
 
 - The catalog lives in `data/products.json` (git-ignored runtime file).
@@ -97,6 +124,9 @@ responds `409`.
 - Orders live in `data/orders.json` and admin accounts in
   `data/admin-accounts.json` (both git-ignored runtime files, same
   write-through pattern).
+- Customer accounts live in `data/customers.json` (also git-ignored) —
+  an object holding the registered customers plus the generated secret
+  that signs customer session tokens (see "Customer accounts" above).
 - Data honesty: **price and THC stay `null` ("TBD") unless the admin enters
   real values.** The API rejects negative prices and THC outside 0–100.
 
@@ -108,6 +138,9 @@ responds `409`.
 | `GET`    | `/api/products`              | —     | Full catalog                                          |
 | `GET`    | `/api/products/:id`          | —     | One product                                           |
 | `POST`   | `/api/orders`                | —     | Place an order (validated, totals recomputed)         |
+| `POST`   | `/api/customers/register`    | —     | `{ name, email, password }` → `201 { token, expiresAt, customer }` |
+| `POST`   | `/api/customers/login`       | —     | `{ email, password }` → `{ token, expiresAt, customer }` |
+| `GET`    | `/api/customers/me`          | Customer | The signed-in customer's profile                   |
 | `POST`   | `/api/admin/login`           | —     | `{ username, password }` → `{ token, expiresAt, authSource }` |
 | `GET`    | `/api/admin/setup-status`    | —     | `{ setupRequired, envConfigured, dummyActive }`       |
 | `POST`   | `/api/admin/setup`           | —     | Create the FIRST admin account (409 after that)       |

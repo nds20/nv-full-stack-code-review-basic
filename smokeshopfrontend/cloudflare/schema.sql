@@ -7,6 +7,10 @@
 --   products        <- server/data/products.json (seeded from products.seed.json)
 --   orders          <- server/data/orders.json
 --   admin_accounts  <- server/data/admin-accounts.json
+--   customers       <- server/data/customers.json (registered shoppers)
+--   app_settings    <- key/value; holds the generated secret that signs
+--                      customer session tokens (the Node server keeps the
+--                      equivalent inside customers.json)
 --
 -- Mapping notes:
 --   * Ids are INTEGER PRIMARY KEY AUTOINCREMENT, matching the Node
@@ -60,4 +64,26 @@ CREATE TABLE IF NOT EXISTS admin_accounts (
   salt       TEXT NOT NULL,
   hash       TEXT NOT NULL,
   created_at TEXT NOT NULL
+);
+
+-- Customer (shopper) accounts. Ids AUTOINCREMENT from 1 and NO rows are
+-- seeded: the first person to register is customer 1. Emails are stored
+-- lowercased; the UNIQUE + COLLATE NOCASE combination also enforces
+-- case-insensitive uniqueness at the database level. Passwords are
+-- PBKDF2-SHA256 salt/hash pairs, never plaintext (see admin note above).
+CREATE TABLE IF NOT EXISTS customers (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  salt       TEXT NOT NULL,
+  hash       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- Key/value settings. Currently one row: the generated
+-- 'customer_token_secret' used to sign customer session tokens
+-- (created lazily on first register/login — no manual step needed).
+CREATE TABLE IF NOT EXISTS app_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
 );

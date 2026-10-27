@@ -201,3 +201,53 @@ export async function verifyPassword(password, saltB64, hashB64) {
   const candidate = await hashPassword(password || '', base64Decode(saltB64));
   return timingSafeStringEqual(base64Encode(candidate), String(hashB64));
 }
+
+// ----- Customer session tokens -------------------------------------------------
+// Shoppers are a SEPARATE audience from admins. Customer token payloads
+// carry `kind: 'customer'`, and the HMAC key is derived from a
+// per-database random secret (see db.js: getCustomerTokenSecret) — never
+// from the admin signing key — so an admin token cannot verify as a
+// customer token or the other way around, on either endpoint set.
+// Same 8-hour TTL and token format as admin tokens.
+
+function customerSigningKey(secret) {
+  return `smokeshop-customer::${secret}`;
+}
+
+export async function issueCustomerToken(customerId, secret) {
+  const payload = { sub: String(customerId), kind: 'customer', exp: Date.now() + TOKEN_TTL_MS };
+  const body = base64urlEncode(encoder.encode(JSON.stringify(payload)));
+  const key = await hmacKey(customerSigningKey(secret), ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
+  return {
+    token: `${body}.${base64urlEncode(new Uint8Array(signature))}`,
+    expiresAt: new Date(payload.exp).toISOString(),
+  };
+}
+
+export async function verifyCustomerToken(token, secret) {
+  if (!token || typeof token !== 'string') return null;
+  const [body, signature] = token.split('.');
+  if (!body || !signature) return null;
+  let valid = false;
+  try {
+    const key = await hmacKey(customerSigningKey(secret), ['verify']);
+    valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      base64urlDecode(signature),
+      encoder.encode(body)
+    );
+  } catch {
+    return null;
+  }
+  if (!valid) return null;
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(base64urlDecode(body)));
+    if (payload.kind !== 'customer' || !payload.sub) return null;
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}

@@ -42,6 +42,12 @@ const multer = require('multer');
 const { createStore } = require('./src/store');
 const { createOrderStore } = require('./src/ordersStore');
 const { createAccountsStore } = require('./src/accounts');
+const {
+  createCustomersStore,
+  publicCustomer,
+  requireCustomer,
+  normalizeEmail,
+} = require('./src/customers');
 const auth = require('./src/auth');
 
 const FRONTEND_ROOT = path.join(__dirname, '..');
@@ -62,6 +68,7 @@ const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gi
 const store = createStore(DATA_DIR);
 const ordersStore = createOrderStore(DATA_DIR);
 const accountsStore = createAccountsStore(DATA_DIR);
+const customersStore = createCustomersStore(DATA_DIR);
 
 // Same 10.2% sales tax the storefront applies (CartContext / CheckoutPage).
 const TAX_RATE = 0.102;
@@ -432,6 +439,54 @@ app.patch('/api/admin/orders/:id/seen', auth.requireAdmin, (req, res) => {
   return res.json(order);
 });
 
+// ----- Customer accounts ------------------------------------------------------
+// Shoppers register and sign in here — these are REAL accounts (see
+// src/customers.js), not the old client-side demo sign-in. Customer
+// sessions are a separate audience from admin tokens: an admin token does
+// not work on these routes and a customer token does not work on admin
+// routes. Nothing is seeded, so the first registration is customer 1.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+app.post('/api/customers/register', (req, res) => {
+  const { name, email, password } = req.body || {};
+  const cleanName = String(name || '').trim();
+  const cleanEmail = normalizeEmail(email);
+  if (!cleanName) {
+    return res.status(400).json({ error: 'Name is required.' });
+  }
+  if (!EMAIL_SHAPE.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Enter a valid email address.' });
+  }
+  if (typeof password !== 'string' || password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+  if (customersStore.findByEmail(cleanEmail)) {
+    return res.status(409).json({ error: 'An account with that email already exists.' });
+  }
+  const customer = customersStore.create({ name: cleanName, email: cleanEmail, password });
+  return res.status(201).json({ ...customersStore.issueToken(customer), customer });
+});
+
+app.post('/api/customers/login', (req, res) => {
+  const { email, password } = req.body || {};
+  // One generic failure for unknown email and wrong password alike —
+  // the response never reveals whether an account exists.
+  const record = customersStore.verify(email, password);
+  if (!record) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  const customer = publicCustomer(record);
+  return res.json({ ...customersStore.issueToken(customer), customer });
+});
+
+app.get('/api/customers/me', requireCustomer(customersStore), (req, res) => {
+  const customer = publicCustomer(customersStore.findById(req.customer.sub));
+  if (!customer) {
+    return res.status(401).json({ error: 'Customer authentication required' });
+  }
+  return res.json({ customer });
+});
+
 // ----- Static files ---------------------------------------------------------
 // Product photos — the same /images/products/... URLs the shop already uses.
 app.use('/images', express.static(PUBLIC_IMAGES_DIR));
@@ -456,6 +511,7 @@ app.listen(PORT, () => {
   console.log(`Smoke Shop API listening on http://localhost:${PORT}`);
   console.log(`Products: ${store.all().length} loaded from ${path.join(DATA_DIR, 'products.json')}`);
   console.log(`Orders: ${ordersStore.all().length} stored, ${ordersStore.newCount()} new`);
+  console.log(`Customers: ${customersStore.count()} registered`);
   if (dummyLoginEnabled()) {
     console.warn('WARNING: DEMO admin login is ACTIVE — sign in with username "admin" / password "admin123".');
     console.warn('This is for local demos only. It turns off as soon as you create an admin account (setup on the admin login screen) or set SMOKESHOP_ADMIN_USER / SMOKESHOP_ADMIN_PASSWORD.');

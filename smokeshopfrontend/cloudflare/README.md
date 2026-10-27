@@ -10,7 +10,7 @@ to host.
 |                | Local / anywhere Node runs       | Cloudflare Pages                          |
 | -------------- | -------------------------------- | ----------------------------------------- |
 | Code           | `../server/` (Express)           | `../functions/` (Pages Functions)         |
-| Product/order data | JSON files in `server/data/` | **D1** database (binding `DB`)            |
+| Catalog/order/customer data | JSON files in `server/data/` | **D1** database (binding `DB`)            |
 | Uploaded photos | `../public/images/products/`    | **R2** bucket (binding `PRODUCT_PHOTOS`)  |
 | Password hashes | scrypt (Node crypto)            | PBKDF2-SHA256 (WebCrypto)                 |
 
@@ -43,8 +43,15 @@ Cloudflare dashboard.
 1. Open your new database and go to its **Console** tab.
 2. Open [`schema.sql`](./schema.sql) from this folder, copy the whole
    file, paste it into the console, and click **Execute**.
-3. You should see the three tables (`products`, `orders`,
-   `admin_accounts`) created.
+3. You should see the five tables (`products`, `orders`,
+   `admin_accounts`, `customers`, `app_settings`) created.
+
+> **Already have a database from an earlier setup?** Don't re-run the
+> whole schema — your database only needs the two newest tables. Paste
+> [`migration-customers.sql`](./migration-customers.sql) into the same
+> Console instead (it adds `customers` + `app_settings`, nothing else,
+> and is safe to re-run). If the console reports a syntax error on the
+> whole paste, run its two statements one at a time.
 
 ### 3. Load the catalog (seed)
 
@@ -117,6 +124,10 @@ push any commit.
    clears it.
 5. (If R2 is bound) add a product with a photo in the admin; its image
    URL will be `/api/photos/products/<id>-<name>.<ext>` and should load.
+6. Create a customer account from the shop's **Create Account** form —
+   the first one registered is **customer #1** — then log out and log
+   back in with it. (Customer accounts are real: passwords are stored as
+   PBKDF2 hashes in the `customers` table, and nothing is seeded.)
 
 ## If your project is a Worker (not Pages)
 
@@ -196,6 +207,19 @@ the same for `seed.sql`).
   PBKDF2 salt/hash. Note the hashes differ from the Node server's scrypt
   format: an account created locally does **not** transfer — create the
   account again here (or use env credentials on both).
+- **`customers`** — one row per registered shopper: incrementing id,
+  name, unique case-insensitive email, PBKDF2 salt/hash. Never seeded —
+  the first registration is customer 1. Backs
+  `POST /api/customers/register`, `POST /api/customers/login` and
+  `GET /api/customers/me`. (Same cross-runtime note: scrypt on Node,
+  PBKDF2 here — customer accounts don't transfer between runtimes
+  either.)
+- **`app_settings`** — key/value rows. Currently one generated row,
+  `customer_token_secret`: the random secret that signs customer
+  session tokens (created automatically on first register/login).
+  Customer tokens are a separate audience from admin tokens — different
+  signing key plus a `kind: 'customer'` claim — so the two never work
+  on each other's endpoints.
 - **R2 bucket** — uploaded photos under keys `products/<id>-<slug>.<ext>`,
   served by the Function at `/api/photos/...`. Seeded products keep
   their static `/images/products/...` image paths from the site build.

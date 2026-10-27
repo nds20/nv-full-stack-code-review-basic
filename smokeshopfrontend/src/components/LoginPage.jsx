@@ -16,7 +16,7 @@ export default function LoginPage({ onLogIn = async (creds) => console.log('log 
 
   const handleSubmit = async () => {
     if (!identifier.trim()) {
-      setError('Enter your email or username.');
+      setError('Enter your email.');
       idRef.current?.focus();
       return;
     }
@@ -30,7 +30,7 @@ export default function LoginPage({ onLogIn = async (creds) => console.log('log 
       await login(identifier.trim(), password);
       await onLogIn({ identifier: identifier.trim(), password });
     } catch (err) {
-      setError(err?.message || 'Email, username or password is incorrect.');
+      setError(err?.message || 'Email or password is incorrect.');
       setPassword('');
       pwRef.current?.focus();
     } finally {
@@ -49,7 +49,7 @@ export default function LoginPage({ onLogIn = async (creds) => console.log('log 
         <h1 id="lg-title" className="lg-title">Log In</h1>
 
         <label htmlFor="lg-id" className="lg-sr">
-          Email or username
+          Email
         </label>
         <input
           id="lg-id"
@@ -59,7 +59,7 @@ export default function LoginPage({ onLogIn = async (creds) => console.log('log 
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="Email or Username"
+          placeholder="Email"
           value={identifier}
           onChange={(e) => {
             setIdentifier(e.target.value);

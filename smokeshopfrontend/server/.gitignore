@@ -8,3 +8,6 @@ data/orders.json.tmp
 # Stored admin accounts — scrypt-hashed, but still never committed
 data/admin-accounts.json
 data/admin-accounts.json.tmp
+# Registered customer accounts (scrypt-hashed passwords + token secret)
+data/customers.json
+data/customers.json.tmp

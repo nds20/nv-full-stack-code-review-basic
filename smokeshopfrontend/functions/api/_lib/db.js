@@ -13,6 +13,12 @@
 //                   data is never stored, same rule as Node).
 //   admin_accounts  username (case-insensitive PK), salt, hash, created_at
 //                   — passwords only ever as PBKDF2 hashes (see auth.js).
+//   customers       shopper accounts: incrementing id, name, unique
+//                   case-insensitive email, PBKDF2 salt/hash, created_at.
+//                   Never seeded — the first registration is customer 1.
+//   app_settings    key/value rows; currently holds the generated
+//                   customer-token signing secret (see
+//                   getCustomerTokenSecret below).
 //
 // Ids are INTEGER AUTOINCREMENT, matching the Node stores' incrementing
 // integer ids.
@@ -21,6 +27,7 @@ import {
   newPasswordRecord,
   verifyPassword,
   hashPassword,
+  base64Encode,
 } from './auth.js';
 
 function parseJsonColumn(value, fallback) {
@@ -252,4 +259,103 @@ export async function verifyAccount(env, username, password) {
     return false;
   }
   return verifyPassword(password || '', account.salt, account.hash);
+}
+
+// ----- Customers ------------------------------------------------------------------
+// The shopper-facing counterpart of the admin accounts above, mirroring
+// server/src/customers.js: emails are stored trimmed + lowercased and are
+// unique case-insensitively, passwords are PBKDF2 hashes, and NOTHING is
+// seeded — the first registration is customer 1.
+
+export function rowToCustomer(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    createdAt: row.created_at,
+  };
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+/** Raw row (includes salt/hash) for credential checks; null when absent. */
+export async function findCustomerRowByEmail(env, email) {
+  const wanted = normalizeEmail(email);
+  if (!wanted) return null;
+  return env.DB.prepare(
+    'SELECT id, name, email, salt, hash, created_at FROM customers WHERE email = ?'
+  )
+    .bind(wanted)
+    .first();
+}
+
+/** Existence check used by registration (duplicate email -> 409). */
+export async function findCustomerByEmail(env, email) {
+  const row = await findCustomerRowByEmail(env, email);
+  return rowToCustomer(row);
+}
+
+export async function getCustomerById(env, id) {
+  const cid = Number(id);
+  if (!Number.isFinite(cid)) return null;
+  const row = await env.DB.prepare(
+    'SELECT id, name, email, created_at FROM customers WHERE id = ?'
+  )
+    .bind(cid)
+    .first();
+  return rowToCustomer(row);
+}
+
+export async function createCustomer(env, { name, email, password }) {
+  const { salt, hash } = await newPasswordRecord(password);
+  const createdAt = new Date().toISOString();
+  const result = await env.DB.prepare(
+    'INSERT INTO customers (name, email, salt, hash, created_at) VALUES (?, ?, ?, ?, ?)'
+  )
+    .bind(String(name || '').trim(), normalizeEmail(email), salt, hash, createdAt)
+    .run();
+  return getCustomerById(env, result.meta.last_row_id);
+}
+
+/**
+ * Credential check for customer sign-in. Returns the public customer on
+ * success, null on any failure — unknown email and wrong password are
+ * indistinguishable (no account enumeration).
+ */
+export async function verifyCustomerCredentials(env, email, password) {
+  const row = await findCustomerRowByEmail(env, email);
+  if (!row) {
+    // Burn a comparable amount of work, same trick as verifyAccount.
+    await hashPassword(password || '', new TextEncoder().encode('unknown-customer-salt'));
+    return null;
+  }
+  const ok = await verifyPassword(password || '', row.salt, row.hash);
+  return ok ? rowToCustomer(row) : null;
+}
+
+// ----- App settings (key/value) ---------------------------------------------------
+
+/**
+ * The random secret that signs customer session tokens. It is generated
+ * on first use and persisted in the `app_settings` table, so customer
+ * tokens work with zero configuration yet cannot be forged from the
+ * public source code. Deliberately independent of the admin signing key:
+ * the two token audiences never share key material.
+ */
+export async function getCustomerTokenSecret(env) {
+  const read = () =>
+    env.DB.prepare("SELECT value FROM app_settings WHERE key = 'customer_token_secret'").first();
+  const existing = await read();
+  if (existing && existing.value) return existing.value;
+  const secret = base64Encode(crypto.getRandomValues(new Uint8Array(32)));
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO app_settings (key, value) VALUES ('customer_token_secret', ?)"
+  )
+    .bind(secret)
+    .run();
+  const saved = await read();
+  return saved.value;
 }
