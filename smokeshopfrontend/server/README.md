@@ -14,6 +14,26 @@ to build on. The React app, on the other hand, already anticipated this API:
 `/api/products`. So the least invasive coherent step is a small Node service
 in the frontend's own folder, speaking exactly that contract.
 
+## Two runtimes, one API contract
+
+This Node server is one of **two implementations of the same API**:
+
+- **Node (this folder)** — for local development and any host that runs
+  Node. Data lives in JSON files under `data/`; uploaded photos are
+  files in `../public/images/products/`.
+- **Cloudflare Pages Functions** (`../functions/`, setup guide in
+  [`../cloudflare/README.md`](../cloudflare/README.md)) — the port that
+  runs on Cloudflare Pages, where this shop is deployed. Same endpoints,
+  same validation, same auth precedence and setup semantics; data lives
+  in a **D1** database and uploaded photos in an **R2** bucket.
+
+The React frontend talks to relative `/api/*` URLs and does not know or
+care which runtime answers. If you change a rule in one implementation,
+change it in the other. One intentional difference: stored-account
+password hashes use scrypt here and PBKDF2 in the Workers runtime
+(scrypt is unavailable there), so accounts created against one runtime
+must be re-created — or env credentials used — on the other.
+
 ## Run it
 
 ```bash
@@ -145,9 +165,11 @@ orders in the **Orders** tab, with no code changes. New products appear in
 the listing and detail pages automatically because the storefront now
 reads the catalog from this API.
 
-> Static-hosting note: the Cloudflare static deploy has no server behind
-> it, so the shop there keeps using the catalog snapshot bundled in
-> `useProducts.js` as a fallback. Run this server anywhere Node runs
-> (a laptop, a VPS, a container) to make the admin live; point the
-> frontend's `/api` at it via the dev proxy or by serving the build from
-> this server.
+> Hosting note: a purely static deploy has no server behind it, so the
+> shop there keeps using the catalog snapshot bundled in `useProducts.js`
+> as a fallback. To make the admin live, either run this server anywhere
+> Node runs (a laptop, a VPS, a container) and point the frontend's
+> `/api` at it via the dev proxy or by serving the build from this
+> server — or use the Cloudflare port in `../functions/` (see
+> [`../cloudflare/README.md`](../cloudflare/README.md)), which is how the
+> API runs on the live Cloudflare Pages deployment.
