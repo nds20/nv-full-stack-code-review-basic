@@ -32,7 +32,7 @@ export default function ProductsPage({
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.subtitle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
-    const matchesPrice = p.price >= minPrice && p.price <= maxPrice;
+    const matchesPrice = p.price == null || (p.price >= minPrice && p.price <= maxPrice);
     return matchesSearch && matchesCategory && matchesPrice;
   });
 
@@ -160,7 +160,7 @@ export default function ProductsPage({
                       <p className="pp-sub">{product.subtitle}</p>
                       <p className="pp-strength">{product.strength}</p>
                       <div className="pp-footer">
-                        <span className="pp-price">${product.price}</span>
+                        <span className="pp-price">{product.price != null ? `$${product.price}` : 'Price TBD'}</span>
                         <button
                           className="pp-add"
                           onClick={() => addToCart(product, 1)}
