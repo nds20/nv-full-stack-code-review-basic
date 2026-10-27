@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Smoke Shop - 824 AI Engine (static mirror)">
+<title>Smoke Shop - 824 AI Engine</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell header-in">
+    <a class="brand" href="index.html">Smoke Shop <span>824</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="products.html">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html">Cart<span class="cart-badge" data-cart-count hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+<div class="age-overlay" id="ageOverlay" hidden>
+  <section class="ag-card" role="dialog" aria-modal="true" aria-labelledby="ag-title">
+    <h1 id="ag-title">Verify Your Age &amp; Location</h1>
+    <p class="ag-desc">You must be 21 or older to enter. Please confirm your municipality to ensure compliance with local regulations.</p>
+    <form id="ageForm" novalidate>
+      <label class="sr-only" for="ageZip">ZIP code</label>
+      <input class="ag-input" id="ageZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="Enter your ZIP code">
+      <p class="form-error" id="ageError" role="alert" hidden></p>
+      <button class="btn-green" type="submit">Verify &amp; Continue</button>
+    </form>
+    <a class="text-link" href="login.html">Log In</a>
+  </section>
+</div>
+<main class="shell">
+  <section class="hero">
+    <h1>Smoke Shop <span>824</span></h1>
+    <p>The real shelf, online: THC vapes, flower, and nicotine vapes — with real product photos and straight-up pricing. No price listed means it is genuinely still to be confirmed, never made up.</p>
+    <div class="hero-actions">
+      <a class="btn" href="products.html">Shop Products</a>
+      <a class="btn-ghost" href="age-gate.html">Verify Age</a>
+    </div>
+  </section>
+
+  <h2 class="section-title">Featured Products</h2>
+  <div class="grid">
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#ff8c1a,#f5b921)">
+          <img src="images/products/muha-runtz-2g.svg" alt="Muha Meds Runtz 2G">
+          <a class="view-btn" href="product-muha-runtz-2g.html">View Details</a>
+        </div>
+        <div class="card-info">
+          <p class="card-type">Hybrid</p>
+          <h3 class="card-name">Muha Meds Runtz 2G</h3>
+          <p class="card-sub">THC Vape Disposable · Candy-Sweet Fruity Runtz</p>
+          <p class="card-strength">THC TBD</p>
+          <div class="card-footer">
+            <span class="card-price">$17.49</span>
+            <button class="add-btn" data-add-to-cart="muha-runtz-2g">Add</button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">
+          <img src="images/products/muha-galactic-diesel-2g.svg" alt="Muha Meds Galactic Diesel 2G">
+          <a class="view-btn" href="product-muha-galactic-diesel-2g.html">View Details</a>
+        </div>
+        <div class="card-info">
+          <p class="card-type">Hybrid</p>
+          <h3 class="card-name">Muha Meds Galactic Diesel 2G</h3>
+          <p class="card-sub">THC Vape Disposable · Pungent Earthy Diesel · Postless Ceramic, Rechargeable, LED Display</p>
+          <p class="card-strength">THC TBD</p>
+          <div class="card-footer">
+            <span class="card-price">Price TBD</span>
+            <button class="add-btn" data-add-to-cart="muha-galactic-diesel-2g">Add</button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#14532d,#052e16)">
+          <img src="images/products/packman-2g-combo.svg" alt="Pack Man 2G Combo">
+          <a class="view-btn" href="product-pack-man-2g-combo.html">View Details</a>
+        </div>
+        <div class="card-info">
+          <p class="card-type">Indica/Hybrid</p>
+          <h3 class="card-name">Pack Man 2G Combo</h3>
+          <p class="card-sub">THC Vape Dual-Chamber Disposable · Watermelon Frost + Fruit Loops · LED Screen, USB-C, Draw-Activated</p>
+          <p class="card-strength">THC TBD</p>
+          <div class="card-footer">
+            <span class="card-price">Price TBD</span>
+            <button class="add-btn" data-add-to-cart="pack-man-2g-combo">Add</button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#7dd3fc,#38bdf8)">
+          <img src="images/products/raz-nicotine-vape.svg" alt="Raz Nicotine Vape">
+          <a class="view-btn" href="product-raz-nicotine-vape.html">View Details</a>
+        </div>
+        <div class="card-info">
+          <p class="card-type">Nicotine</p>
+          <h3 class="card-name">Raz Nicotine Vape</h3>
+          <p class="card-sub">Nicotine Vape · Baby Blue</p>
+          <p class="card-strength">12W</p>
+          <div class="card-footer">
+            <span class="card-price">Price TBD</span>
+            <button class="add-btn" data-add-to-cart="raz-nicotine-vape">Add</button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#dc2626,#171717)">
+          <img src="images/products/rehab-cherry-candy-gelato.svg" alt="Rehab Cherry Candy Gelato">
+          <a class="view-btn" href="product-rehab-cherry-candy-gelato.html">View Details</a>
+        </div>
+        <div class="card-info">
+          <p class="card-type">Flower</p>
+          <h3 class="card-name">Rehab Cherry Candy Gelato</h3>
+          <p class="card-sub">Cannabis Flower · Cherry Candy Gelato</p>
+          <p class="card-strength">THC TBD</p>
+          <div class="card-footer">
+            <span class="card-price">$30</span>
+            <button class="add-btn" data-add-to-cart="rehab-cherry-candy-gelato">Add</button>
+          </div>
+        </div>
+      </article>
+  </div>
+
+  <h2 class="section-title">Shop by Category</h2>
+  <div class="cat-strip">
+    <a class="cat-tile" href="products.html"><h3>Flower</h3><p>Cannabis flower, including Rehab Cherry Candy Gelato.</p></a>
+    <a class="cat-tile" href="products.html"><h3>Vapes</h3><p>THC vape disposables from Muha Meds and Pack Man.</p></a>
+    <a class="cat-tile" href="products.html"><h3>Nicotine Vapes</h3><p>Nicotine vapes, including the Raz in baby blue.</p></a>
+  </div>
+
+  <div class="badges">
+    <div class="badge-card"><div class="badge-icon">🔒</div><h3>Secure Checkout</h3><p>Your data is protected</p></div>
+    <div class="badge-card"><div class="badge-icon">🌿</div><h3>Quality Guaranteed</h3><p>Tested. Trusted. Transparent.</p></div>
+    <div class="badge-card"><div class="badge-icon">🚚</div><h3>Discreet Delivery</h3><p>Fast and discreet shipping</p></div>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="shell">
+    <p class="age-note">You must be 21 or older to purchase products from this site. Please consume responsibly.</p>
+    <nav aria-label="Footer">
+      <a href="index.html">Home</a>
+      <a href="products.html">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html">Cart</a>
+      <a href="age-gate.html">Age Verification</a>
+    </nav>
+    <p class="fine">Static mirror of the Smoke Shop. Prices shown only where confirmed; everything else is listed as Price TBD.</p>
+  </div>
+</footer>
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Smoke Shop - 824 AI Engine (static mirror)">
+<title>Shop Products · Smoke Shop</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell header-in">
+    <a class="brand" href="index.html">Smoke Shop <span>824</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="products.html" aria-current="page">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html">Cart<span class="cart-badge" data-cart-count hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+<main class="shell">
+  <a class="back-link" href="index.html">← Back</a>
+  <h1 style="margin:10px 0 0;">Shop Products</h1>
+  <div class="pp-layout">
+    <aside class="pp-sidebar">
+      <h2>Refine</h2>
+      <section>
+        <h3>Category</h3>
+        <div id="catFilters">
+          <label class="pp-checkbox"><input type="radio" name="category" value="all" checked> All Products</label>
+          <label class="pp-checkbox"><input type="radio" name="category" value="flower"> Flower</label>
+          <label class="pp-checkbox"><input type="radio" name="category" value="vapes"> Vapes</label>
+          <label class="pp-checkbox"><input type="radio" name="category" value="gummies"> Gummies</label>
+          <label class="pp-checkbox"><input type="radio" name="category" value="pouches"> Pouches</label>
+          <label class="pp-checkbox"><input type="radio" name="category" value="nic-vapes"> Nicotine Vapes</label>
+        </div>
+      </section>
+      <section>
+        <h3>Price Range</h3>
+        <div class="pp-range">
+          <input type="range" id="minPrice" min="0" max="100" value="0" aria-label="Minimum price">
+          <input type="range" id="maxPrice" min="0" max="100" value="100" aria-label="Maximum price">
+          <p id="priceReadout">$0 - $100</p>
+        </div>
+      </section>
+    </aside>
+
+    <section>
+      <div class="pp-controls">
+        <div class="pp-search">
+          <input type="text" id="searchTerm" placeholder="Search products..." aria-label="Search products">
+        </div>
+        <div class="pp-sort">
+          <label for="sortBy">Sort:</label>
+          <select id="sortBy">
+            <option value="featured">Featured</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="name">Name: A-Z</option>
+          </select>
+        </div>
+        <div class="pp-view">
+          <button id="viewGrid" class="active" type="button">⊞ Grid</button>
+          <button id="viewList" type="button">≡ List</button>
+        </div>
+      </div>
+      <div class="grid" id="productGrid"></div>
+      <div class="empty-msg" id="emptyMsg" hidden>No products found</div>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="shell">
+    <p class="age-note">You must be 21 or older to purchase products from this site. Please consume responsibly.</p>
+    <nav aria-label="Footer">
+      <a href="index.html">Home</a>
+      <a href="products.html">Products</a>
+      <a href="login.html">Log In</a>
+      <a href="cart.html">Cart</a>
+      <a href="age-gate.html">Age Verification</a>
+    </nav>
+    <p class="fine">Static mirror of the Smoke Shop. Prices shown only where confirmed; everything else is listed as Price TBD.</p>
+  </div>
+</footer>
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  var grid = document.getElementById('productGrid');
+  var emptyMsg = document.getElementById('emptyMsg');
+
+  function cardHtml(p) {
+    return '<article class="card">' +
+      '<div class="thumb" style="background:linear-gradient(135deg,' + p.tile[0] + ',' + p.tile[1] + ')">' +
+        '<img src="' + p.image + '" alt="' + p.name + '">' +
+        '<a class="view-btn" href="' + p.page + '">View Details</a>' +
+      '</div>' +
+      '<div class="card-info">' +
+        '<p class="card-type">' + p.type + '</p>' +
+        '<h3 class="card-name">' + p.name + '</h3>' +
+        '<p class="card-sub">' + p.subtitle + '</p>' +
+        '<p class="card-strength">' + p.strength + '</p>' +
+        '<div class="card-footer"><span class="card-price">' + priceLabel(p) + '</span>' +
+        '<button class="add-btn" data-add-to-cart="' + p.slug + '">Add</button></div>' +
+      '</div></article>';
+  }
+
+  function render() {
+    var term = document.getElementById('searchTerm').value.toLowerCase();
+    var cat = document.querySelector('input[name="category"]:checked').value;
+    var minP = Number(document.getElementById('minPrice').value);
+    var maxP = Number(document.getElementById('maxPrice').value);
+    var sortBy = document.getElementById('sortBy').value;
+    document.getElementById('priceReadout').textContent = '$' + minP + ' - $' + maxP;
+
+    var filtered = PRODUCTS.filter(function (p) {
+      var matchesSearch = p.name.toLowerCase().includes(term) || p.subtitle.toLowerCase().includes(term);
+      var matchesCategory = cat === 'all' || p.category === cat;
+      var matchesPrice = p.price == null || (p.price >= minP && p.price <= maxP);
+      return matchesSearch && matchesCategory && matchesPrice;
+    });
+    if (sortBy === 'price-low') filtered.sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+    if (sortBy === 'price-high') filtered.sort(function (a, b) { return (b.price || 0) - (a.price || 0); });
+    if (sortBy === 'name') filtered.sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+    grid.innerHTML = filtered.map(cardHtml).join('');
+    emptyMsg.hidden = filtered.length !== 0;
+  }
+
+  ['searchTerm', 'minPrice', 'maxPrice', 'sortBy'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', render);
+    document.getElementById(id).addEventListener('change', render);
+  });
+  document.querySelectorAll('input[name="category"]').forEach(function (r) {
+    r.addEventListener('change', render);
+  });
+  document.getElementById('viewGrid').addEventListener('click', function () {
+    grid.classList.remove('list');
+    this.classList.add('active');
+    document.getElementById('viewList').classList.remove('active');
+  });
+  document.getElementById('viewList').addEventListener('click', function () {
+    grid.classList.add('list');
+    this.classList.add('active');
+    document.getElementById('viewGrid').classList.remove('active');
+  });
+  render();
+</script>
+</body>
+</html>
