@@ -19,7 +19,7 @@ export default function ProductDetailPage({
   if (!product) return <div>Product not found</div>;
 
   const images = [
-    { src: null, color: product.tile[0] },
+    { src: product.image || null, color: product.tile[0] },
     { src: null, color: product.tile[1] },
     { src: null, color: product.tile[0] },
     { src: null, color: product.tile[1] },
@@ -52,7 +52,15 @@ export default function ProductDetailPage({
       <main className="pd-shell">
         <div className="pd-layout">
           <section className="pd-gallery">
-            <div className="pd-main-image" style={{ background: images[imageIndex].color }}></div>
+            <div className="pd-main-image" style={{ background: images[imageIndex].color }}>
+              {images[imageIndex].src && (
+                <img
+                  className="pd-main-img"
+                  src={images[imageIndex].src}
+                  alt={product.name}
+                />
+              )}
+            </div>
             <div className="pd-thumbnails">
               {images.map((img, i) => (
                 <button
@@ -61,7 +69,9 @@ export default function ProductDetailPage({
                   style={{ background: img.color }}
                   onClick={() => setImageIndex(i)}
                   aria-label={`Image ${i + 1}`}
-                />
+                >
+                  {img.src && <img className="pd-thumb-img" src={img.src} alt="" />}
+                </button>
               ))}
             </div>
           </section>
@@ -153,6 +163,10 @@ const css = `
 .pd-thumbnails { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
 .pd-thumb { width: 100%; aspect-ratio: 1; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: border-color 0.2s; }
 .pd-thumb.active { border-color: #2d6a3e; }
+.pd-main-image { overflow: hidden; }
+.pd-main-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd-thumb { padding: 0; overflow: hidden; }
+.pd-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .pd-details { display: flex; flex-direction: column; }
 .pd-meta { }

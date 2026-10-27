@@ -1,43 +1,79 @@
-824™️: BeastMode Enterprise Code Review Engine
+824: Enterprise Code Review Engine
+
+
 “Your Copilot, Not Your Replacement.”
-BeastMode Enterprise Code Review is an enterprise-grade AI-powered code review engine designed to reduce friction in the development lifecycle. Built for security, compliance, and velocity, it integrates directly into your CI/CD pipeline to ensure that every pull request meets the highest standards of code quality.
+
+
+824 is an enterprise-grade, AI-powered code review engine built to remove friction from the development lifecycle. It plugs directly into your CI/CD pipeline and reviews every pull request against your standards, ensuring your team ships faster without lowering the bar on security, compliance, or quality.
 ￼
+Table of Contents
+1.	￼
+2.	￼
+3.	￼
+4.	￼
+5.	￼
+6. ￼
 ￼
-🚀 Getting Started
-1. Setup
-￼     Clone the Repo: git clone https://github.com/YOUR_USERNAME/BeastMode82420.git
-￼     Install Dependencies: npm install
-￼     License Key: You must have a valid BEAST_LICENSE_KEY set in your environment variables to run the engine.
-2. Integration
-BeastMode Enterprise Code Review is designed to be plug-and-play with any AI-driven development environment. You can trigger the engine directly from your CLI:
+## Installation
+1.	Clone the repository:
+   
 
-
-node nv-full-stack-review-engine.js —pr <PR_NUMBER>
+git clone https://github.com/<your-org>/824.git
+cd 824
 
 
 
-3. CI/CD Integration
-To automate your reviews, add this file to your .github/workflows/review.yml:
+2.	Install dependencies:
+   
+
+npm install
 
 
-name: BeastMode Enterprise Code Review
-on: 
-  push:
-  pull_request:
-  workflow_dispatch:
+
+￼
+Environment Configuration
+Option A: Local Development
+Create a .env file in the root:
+BEAST_LICENSE_KEY=your-key-here
+Option B: GitHub Actions
+1.	Go to your repo Settings	> Secrets and variables	> Actions.
+2.	Add a New repository secret:
+   ￼   Name: BEAST_LICENSE_KEY
+   ￼   Secret: [Your Key]
+￼
+The AFS Hook
+The AFS Hook is the autonomous integrity layer for 824. It acts as a pre-flight gatekeeper to ensure system stability.
+Core Capabilities:
+￼   Autonomous Conflict Detection: Scans for Git merge markers (<<<<<<<, =======, >>>>>>>).
+￼   Self-Healing: Automatically resolves friction by prioritizing the architectural integrity of the HEAD branch.
+￼   Pre-Flight Integrity: Ensures your main branch stays clean and deployment-ready.
+￼
+## Quick Start
+Run the engine locally:
+
+
+npm run review
+
+
+
+￼
+## CI/CD Integration
+Add this 824-review.yml to your .github/workflows/ directory:
+
+
+name: BeastMode Review
+on: [push, pull_request]
 jobs:
   review:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: ywrite
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: ‘18’
-      - name: Run BeastMode Engine
+      - name: Run AFS Integrity Check
+        run: node -e ‘require(“./afs-hook.js”).runAFSIntegrityCheck()’
+      - name: Run 824 Engine
         env:
           BEAST_LICENSE_KEY: ${{ secrets.BEAST_LICENSE_KEY }}
         run: node nv-full-stack-review-engine.js —pr ${{ github.event.pull_request.number || ‘1’ }}
@@ -45,6 +81,12 @@ jobs:
 
 
 ￼
+The AFS Legacy
+824 is built on the values of Abamonte, Foster, and Smith:
+￼   Discipline: Consistent standards, applied every time.
+￼   Structural Integrity: Code that is sound at its foundation.
+￼   Friction-Reduction: Tools that carry the weight so you can focus on building.
+Hold yourself to a high standard, build on solid ground, and let the tool carry the weight. That’s the 824 way.
 🛠 Features
 ￼     Automated Friction Reduction: Intelligent pattern matching to identify and resolve common code smells.
 ￼     Security & Compliance: Built-in analyzers for HIPAA compliance and enterprise security standards.
