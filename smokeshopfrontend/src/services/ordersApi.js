@@ -43,3 +43,50 @@ export function getPendingOrders() {
     return [];
   }
 }
+
+// ----- Stripe payments -------------------------------------------------------
+// When the server has a Stripe key configured, placing an order is
+// followed by a hosted Stripe Checkout redirect; the order's accessToken
+// (issued in the POST /api/orders response) authorizes both starting the
+// payment and reading that one order's status afterwards. When Stripe is
+// not configured, fetchPaymentsConfig reports stripeEnabled: false and
+// checkout stays in demo mode — nothing below is called.
+
+export async function fetchPaymentsConfig() {
+  const response = await fetch('/api/payments/config');
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.error || `Payments config failed (${response.status})`);
+    err.status = response.status;
+    throw err;
+  }
+  return data;
+}
+
+export async function createCheckoutSession(orderId, accessToken) {
+  const response = await fetch(`/api/orders/${orderId}/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.error || `Could not start payment (${response.status})`);
+    err.status = response.status;
+    throw err;
+  }
+  return data;
+}
+
+export async function fetchOrderStatus(orderId, accessToken) {
+  const response = await fetch(
+    `/api/orders/${orderId}/status?token=${encodeURIComponent(accessToken)}`
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.error || `Order status failed (${response.status})`);
+    err.status = response.status;
+    throw err;
+  }
+  return data;
+}

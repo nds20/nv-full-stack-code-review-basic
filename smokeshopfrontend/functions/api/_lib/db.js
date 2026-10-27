@@ -10,7 +10,14 @@
 //   orders          one row per order; `items`, `customer` and `payment`
 //                   are TEXT columns holding JSON (payment is NULL or a
 //                   JSON object with only { method, last4 } — full card
-//                   data is never stored, same rule as Node).
+//                   data is never stored, same rule as Node). Stripe
+//                   payments add flat columns (migration-stripe.sql):
+//                   `payment_status` ('unpaid' | 'pending' | 'paid' |
+//                   'payment_failed'), `stripe_session_id`,
+//                   `stripe_payment_intent_id`, and `access_token` — a
+//                   random per-order secret the buyer's browser holds so
+//                   it can read that one order's status and start its
+//                   checkout without an account.
 //   admin_accounts  username (case-insensitive PK), salt, hash, created_at
 //                   — passwords only ever as PBKDF2 hashes (see auth.js).
 //   customers       shopper accounts: incrementing id, name, unique
@@ -152,11 +159,17 @@ export function rowToOrder(row) {
     status: row.status,
     createdAt: row.created_at,
     seenAt: row.seen_at,
+    // Stripe payment lifecycle (columns added by migration-stripe.sql;
+    // orders from before it read as 'unpaid' with no session).
+    paymentStatus: row.payment_status || 'unpaid',
+    stripeSessionId: row.stripe_session_id || null,
+    stripePaymentIntentId: row.stripe_payment_intent_id || null,
+    accessToken: row.access_token || null,
   };
 }
 
 const ORDER_COLUMNS =
-  'id, items, subtotal, tax, total, customer, payment, status, created_at, seen_at';
+  'id, items, subtotal, tax, total, customer, payment, status, created_at, seen_at, payment_status, stripe_session_id, stripe_payment_intent_id, access_token';
 
 /** All orders, newest first — same as the Node orders store. */
 export async function listOrders(env) {
@@ -175,10 +188,16 @@ export async function getOrder(env, id) {
   return rowToOrder(row);
 }
 
+/** A random per-order access token (hex) — see the orders mapping note. */
+export function newOrderAccessToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function createOrder(env, data) {
   const result = await env.DB.prepare(
-    `INSERT INTO orders (items, subtotal, tax, total, customer, payment, status, created_at, seen_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, NULL)`
+    `INSERT INTO orders (items, subtotal, tax, total, customer, payment, status, created_at, seen_at, payment_status, stripe_session_id, stripe_payment_intent_id, access_token)
+     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, NULL, 'unpaid', NULL, NULL, ?)`
   )
     .bind(
       JSON.stringify(data.items),
@@ -187,10 +206,52 @@ export async function createOrder(env, data) {
       data.total,
       JSON.stringify(data.customer),
       data.payment ? JSON.stringify(data.payment) : null,
-      new Date().toISOString()
+      new Date().toISOString(),
+      newOrderAccessToken()
     )
     .run();
   return getOrder(env, result.meta.last_row_id);
+}
+
+/**
+ * Patch an order's Stripe payment fields. Only the keys present in
+ * `patch` are written (camelCase in, snake_case columns out):
+ * { paymentStatus, stripeSessionId, stripePaymentIntentId }.
+ * Returns the updated order, or null when it does not exist.
+ */
+export async function updateOrderPayment(env, id, patch) {
+  const existing = await getOrder(env, id);
+  if (!existing) return null;
+  const sets = [];
+  const values = [];
+  if (patch.paymentStatus !== undefined) {
+    sets.push('payment_status = ?');
+    values.push(patch.paymentStatus);
+  }
+  if (patch.stripeSessionId !== undefined) {
+    sets.push('stripe_session_id = ?');
+    values.push(patch.stripeSessionId);
+  }
+  if (patch.stripePaymentIntentId !== undefined) {
+    sets.push('stripe_payment_intent_id = ?');
+    values.push(patch.stripePaymentIntentId);
+  }
+  if (sets.length === 0) return existing;
+  await env.DB.prepare(`UPDATE orders SET ${sets.join(', ')} WHERE id = ?`)
+    .bind(...values, existing.id)
+    .run();
+  return getOrder(env, existing.id);
+}
+
+/** Find the order a Stripe Checkout Session belongs to (webhook lookup). */
+export async function findOrderByStripeSessionId(env, sessionId) {
+  if (!sessionId) return null;
+  const row = await env.DB.prepare(
+    `SELECT ${ORDER_COLUMNS} FROM orders WHERE stripe_session_id = ?`
+  )
+    .bind(String(sessionId))
+    .first();
+  return rowToOrder(row);
 }
 
 /**

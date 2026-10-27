@@ -180,6 +180,47 @@ profile. Order history is deliberately not part of this yet.
   external provider (and credentials) and are deliberately out of scope;
   alerts here mean the admin page itself.
 
+## Stripe payments
+
+Real card payments via **Stripe Checkout** (Stripe-hosted page — card
+data never touches this server). Entirely optional and off until
+configured:
+
+- Set `STRIPE_SECRET_KEY` (start with a **test-mode** key, `sk_test_...`)
+  and `STRIPE_WEBHOOK_SECRET` (see below) in the server's environment /
+  `.env`, then restart. `GET /api/payments/config` now reports
+  `stripeEnabled: true` and the storefront switches its payment step to
+  "Pay with card via Stripe": placing an order saves it as usual, then
+  redirects the buyer to Stripe to pay, then back to the confirmation
+  page. With no key set, that endpoint answers `503` and checkout stays
+  in demo mode — nothing else changes.
+- The flow: `POST /api/orders` (order saved, `paymentStatus: 'unpaid'`,
+  response carries a per-order `accessToken`) →
+  `POST /api/orders/:id/checkout` with that token (creates the Checkout
+  Session **from the stored items/totals**, marks the order `pending`,
+  returns Stripe's URL) → Stripe → the webhook below marks it `paid`.
+  The buyer can poll `GET /api/orders/:id/status?token=...` — the token
+  gates it, so order ids alone reveal nothing.
+- The admin Orders tab shows a payment chip per order: **Paid** /
+  **Payment pending** / **Unpaid** / **Payment failed**.
+- **Webhook:** point Stripe at `POST /api/stripe/webhook`. Locally, the
+  Stripe CLI is the easy path: `stripe login`, then
+  `stripe listen --forward-to localhost:4000/api/stripe/webhook` — it
+  prints a `whsec_...` secret for `STRIPE_WEBHOOK_SECRET` and forwards
+  real test events. Signatures are verified against the raw body
+  (HMAC-SHA256, 5-minute tolerance) before anything is trusted, and
+  handling is idempotent — Stripe retries change nothing twice. Events
+  handled: `checkout.session.completed` → `paid`,
+  `checkout.session.expired` → back to `unpaid`,
+  `checkout.session.async_payment_failed` → `payment_failed`. A paid
+  order is never downgraded.
+- **Test it** with Stripe's test card `4242 4242 4242 4242`, any future
+  expiry, any CVC. Only move to a live (`sk_live_...`) key when test
+  mode works end to end.
+- The Cloudflare runtime implements the identical contract; see
+  `../cloudflare/README.md` ("Stripe payments") for its setup, including
+  the `migration-stripe.sql` database step.
+
 ## Photos
 
 Uploaded photos are stored in `../public/images/products/` and served from

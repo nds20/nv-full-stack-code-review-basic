@@ -62,3 +62,16 @@ export function numericId(raw) {
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
 }
+
+/**
+ * Constant-time comparison of two hex strings (used for webhook
+ * signatures). Lengths leak, as with the byte compare in auth.js.
+ */
+export function timingSafeHexEqual(a, b) {
+  const sa = String(a);
+  const sb = String(b);
+  if (sa.length !== sb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sa.length; i += 1) diff |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
+  return diff === 0;
+}

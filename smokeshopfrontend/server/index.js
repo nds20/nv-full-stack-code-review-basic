@@ -9,6 +9,13 @@
  *              GET    /api/products/:id
  *              POST   /api/orders              place an order (validated,
  *                                             totals recomputed server-side)
+ *              GET    /api/payments/config     is Stripe Checkout enabled?
+ *              POST   /api/orders/:id/checkout  start a Stripe payment for an
+ *                                             order (order access token)
+ *              GET    /api/orders/:id/status    order/payment status (order
+ *                                             access token)
+ *              POST   /api/stripe/webhook       Stripe payment events
+ *                                             (signature-verified)
  *   - Admin:   POST   /api/admin/login         env creds, stored account, or
  *                                             demo fallback -> token
  *              GET    /api/admin/setup-status  does first-run setup apply?
@@ -36,6 +43,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const multer = require('multer');
 
@@ -49,6 +57,7 @@ const {
   normalizeEmail,
 } = require('./src/customers');
 const auth = require('./src/auth');
+const stripe = require('./src/stripe');
 
 const FRONTEND_ROOT = path.join(__dirname, '..');
 const PUBLIC_IMAGES_DIR = path.join(FRONTEND_ROOT, 'public', 'images');
@@ -307,6 +316,9 @@ function finalizePhoto(product, file) {
 }
 
 const app = express();
+// Stripe webhooks are verified against the RAW request body, so this one
+// path gets a raw-body parser BEFORE the JSON parser below consumes it.
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -421,6 +433,126 @@ app.post('/api/orders', (req, res, next) => {
   }
 });
 
+// ----- Payments (Stripe Checkout) -------------------------------------------
+// Orders are placed first (above) and paid second. The buyer receives a
+// per-order accessToken in the order response; presenting it here starts a
+// hosted Stripe Checkout session for the stored, server-computed total —
+// the client never names amounts. With no STRIPE_SECRET_KEY configured
+// the checkout-session endpoint answers 503 and the shop stays in demo
+// checkout mode, exactly as before. See src/stripe.js + README ("Stripe
+// payments"). Configuration probe for the storefront:
+app.get('/api/payments/config', (req, res) => {
+  res.json({ stripeEnabled: stripe.stripeConfigured() });
+});
+
+function orderTokenMatches(order, token) {
+  if (!order || !order.accessToken || !token) return false;
+  const a = Buffer.from(String(token));
+  const b = Buffer.from(order.accessToken);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+app.post('/api/orders/:id/checkout', async (req, res, next) => {
+  try {
+    if (!stripe.stripeConfigured()) {
+      return res.status(503).json({
+        error: 'Card payments are not configured yet (STRIPE_SECRET_KEY is not set). The order is saved; checkout continues in demo mode.',
+      });
+    }
+    const order = ordersStore.get(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (!orderTokenMatches(order, req.body && req.body.accessToken)) {
+      return res.status(403).json({ error: 'A valid order access token is required to start payment for this order.' });
+    }
+    if (order.paymentStatus === 'paid') {
+      return res.status(409).json({ error: 'This order has already been paid.' });
+    }
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const session = await stripe.createCheckoutSession(order, origin);
+    ordersStore.updatePayment(order.id, {
+      paymentStatus: 'pending',
+      stripeSessionId: session.id,
+    });
+    return res.json({ url: session.url, sessionId: session.id });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// The buyer's narrow window into their own order (the confirmation page
+// polls this after returning from Stripe). Token-gated: an order id alone
+// — small, guessable integers — reveals nothing.
+app.get('/api/orders/:id/status', (req, res) => {
+  const order = ordersStore.get(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (!orderTokenMatches(order, req.query.token)) {
+    return res.status(403).json({ error: 'A valid order access token is required to read this order.' });
+  }
+  return res.json({
+    id: order.id,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    total: order.total,
+  });
+});
+
+// Stripe calls this server-to-server when a payment resolves. The
+// signature is verified against the RAW body (see the raw parser above)
+// before anything is parsed or trusted. Handling is idempotent — Stripe
+// retries deliveries, and re-applying an event changes nothing. Orders
+// are matched by their stored Checkout Session id, with the session
+// metadata's order_id as a fallback. Lifecycle:
+//   checkout.session.completed          -> 'paid' (+ payment intent id)
+//   checkout.session.expired            -> 'pending' returns to 'unpaid'
+//   checkout.session.async_payment_failed -> 'payment_failed'
+// A paid order is never downgraded by a later event.
+app.post('/api/stripe/webhook', (req, res) => {
+  if (!stripe.stripeWebhookConfigured()) {
+    return res.status(503).json({ error: 'Stripe webhook is not configured (STRIPE_WEBHOOK_SECRET is not set).' });
+  }
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+  if (!stripe.verifyWebhookSignature(process.env.STRIPE_WEBHOOK_SECRET, rawBody, req.get('stripe-signature') || '')) {
+    return res.status(400).json({ error: 'Invalid Stripe signature.' });
+  }
+  let event;
+  try {
+    event = JSON.parse(rawBody);
+  } catch {
+    return res.status(400).json({ error: 'Invalid webhook payload.' });
+  }
+  const session = (event.data && event.data.object) || {};
+  const orderForSession = () => {
+    const bySession = ordersStore.findBySessionId(session.id);
+    if (bySession) return bySession;
+    const orderId = (session.metadata && session.metadata.order_id) || session.client_reference_id;
+    return orderId ? ordersStore.get(orderId) : null;
+  };
+
+  if (event.type === 'checkout.session.completed') {
+    const order = orderForSession();
+    if (order && order.paymentStatus !== 'paid') {
+      ordersStore.updatePayment(order.id, {
+        paymentStatus: 'paid',
+        stripeSessionId: session.id || order.stripeSessionId,
+        stripePaymentIntentId: typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : order.stripePaymentIntentId,
+      });
+    }
+  } else if (event.type === 'checkout.session.expired') {
+    const order = orderForSession();
+    if (order && order.paymentStatus === 'pending') {
+      ordersStore.updatePayment(order.id, { paymentStatus: 'unpaid' });
+    }
+  } else if (event.type === 'checkout.session.async_payment_failed') {
+    const order = orderForSession();
+    if (order && order.paymentStatus !== 'paid') {
+      ordersStore.updatePayment(order.id, { paymentStatus: 'payment_failed' });
+    }
+  }
+  return res.json({ received: true });
+});
+
 // Admin order inbox — this is what powers the admin page's order alerts:
 // the dashboard polls the list and badges orders still in status 'new'.
 app.get('/api/admin/orders', auth.requireAdmin, (req, res) => {
@@ -512,6 +644,9 @@ app.listen(PORT, () => {
   console.log(`Products: ${store.all().length} loaded from ${path.join(DATA_DIR, 'products.json')}`);
   console.log(`Orders: ${ordersStore.all().length} stored, ${ordersStore.newCount()} new`);
   console.log(`Customers: ${customersStore.count()} registered`);
+  console.log(stripe.stripeConfigured()
+    ? 'Payments: Stripe Checkout ENABLED (STRIPE_SECRET_KEY is set).'
+    : 'Payments: Stripe not configured — demo checkout mode (set STRIPE_SECRET_KEY to enable real card payments).');
   if (dummyLoginEnabled()) {
     console.warn('WARNING: DEMO admin login is ACTIVE — sign in with username "admin" / password "admin123".');
     console.warn('This is for local demos only. It turns off as soon as you create an admin account (setup on the admin login screen) or set SMOKESHOP_ADMIN_USER / SMOKESHOP_ADMIN_PASSWORD.');

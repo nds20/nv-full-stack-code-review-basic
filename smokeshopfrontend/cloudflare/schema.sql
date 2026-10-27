@@ -56,7 +56,11 @@ CREATE TABLE IF NOT EXISTS orders (
   payment    TEXT,
   status     TEXT NOT NULL DEFAULT 'new',
   created_at TEXT NOT NULL,
-  seen_at    TEXT
+  seen_at    TEXT,
+  payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  stripe_session_id TEXT,
+  stripe_payment_intent_id TEXT,
+  access_token TEXT
 );
 
 CREATE TABLE IF NOT EXISTS admin_accounts (

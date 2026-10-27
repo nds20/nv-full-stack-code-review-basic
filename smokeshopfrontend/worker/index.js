@@ -15,6 +15,10 @@
 //   GET    /api/products/:id             PUT  /api/products/:id       (admin)
 //                                        DELETE /api/products/:id     (admin)
 //   POST   /api/orders
+//   POST   /api/orders/:id/checkout                             (order token)
+//   GET    /api/orders/:id/status                               (order token)
+//   GET    /api/payments/config
+//   POST   /api/stripe/webhook                                  (Stripe-signed)
 //   POST   /api/customers/register
 //   POST   /api/customers/login
 //   GET    /api/customers/me                                          (customer)
@@ -43,6 +47,10 @@ import {
   onRequestDelete as productDelete,
 } from '../functions/api/products/[id].js';
 import { onRequestPost as orderCreate } from '../functions/api/orders.js';
+import { onRequestPost as orderCheckout } from '../functions/api/orders/[id]/checkout.js';
+import { onRequestGet as orderStatus } from '../functions/api/orders/[id]/status.js';
+import { onRequestGet as paymentsConfig } from '../functions/api/payments/config.js';
+import { onRequestPost as stripeWebhook } from '../functions/api/stripe/webhook.js';
 import { onRequestPost as customerRegister } from '../functions/api/customers/register.js';
 import { onRequestPost as customerLogin } from '../functions/api/customers/login.js';
 import { onRequestGet as customerMe } from '../functions/api/customers/me.js';
@@ -64,6 +72,10 @@ const ROUTES = [
     handlers: { GET: productGet, PUT: productUpdate, DELETE: productDelete },
   },
   { parts: ['api', 'orders'], handlers: { POST: orderCreate } },
+  { parts: ['api', 'orders', ':id', 'checkout'], handlers: { POST: orderCheckout } },
+  { parts: ['api', 'orders', ':id', 'status'], handlers: { GET: orderStatus } },
+  { parts: ['api', 'payments', 'config'], handlers: { GET: paymentsConfig } },
+  { parts: ['api', 'stripe', 'webhook'], handlers: { POST: stripeWebhook } },
   { parts: ['api', 'customers', 'register'], handlers: { POST: customerRegister } },
   { parts: ['api', 'customers', 'login'], handlers: { POST: customerLogin } },
   { parts: ['api', 'customers', 'me'], handlers: { GET: customerMe } },
