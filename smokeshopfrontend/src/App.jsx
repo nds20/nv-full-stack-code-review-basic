@@ -11,11 +11,13 @@ import OrderConfirmationPage from './components/OrderConfirmationPage';
 import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import { isAdminLoggedIn } from './services/adminApi';
+import { submitOrder, queuePendingOrder } from './services/ordersApi';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('agegate');
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [orderTotal, setOrderTotal] = useState(null);
 
   // The store admin lives at #/admin so it can be bookmarked without
   // changing the shopper flow.
@@ -55,8 +57,22 @@ export default function App() {
   };
 
   const handlePlaceOrder = async (order) => {
-    console.log('Order placed:', order);
-    setOrderId('ORD-' + Date.now());
+    // Send the order to the API so it lands in the admin's order inbox.
+    // If the API is unreachable (e.g. the static Cloudflare demo has no
+    // server behind it) or rejects it, the order is kept in a local
+    // pending list instead and checkout completes exactly as before —
+    // the customer always gets their confirmation.
+    let placedId = 'ORD-' + Date.now();
+    let total = order && order.totals ? order.totals.total : null;
+    try {
+      const saved = await submitOrder(order);
+      if (saved && saved.id != null) placedId = 'ORD-' + saved.id;
+      if (saved && typeof saved.total === 'number') total = saved.total;
+    } catch (err) {
+      queuePendingOrder(order);
+    }
+    setOrderId(placedId);
+    setOrderTotal(total);
     setCurrentPage('order-confirmation');
   };
 
@@ -110,7 +126,7 @@ export default function App() {
           <OrderConfirmationPage
             orderId={orderId}
             onContinueShopping={() => setCurrentPage('products')}
-            total={150.00}
+            total={orderTotal != null ? orderTotal : 150.00}
           />
         )}
         {currentPage === 'admin-login' && (

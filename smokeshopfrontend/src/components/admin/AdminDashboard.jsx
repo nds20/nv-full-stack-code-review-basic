@@ -1,12 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   fetchAdminProducts,
   createProduct,
   updateProduct,
   deleteProduct,
   buildProductBody,
+  fetchAdminOrders,
+  markOrderSeen,
   clearAdminToken,
 } from '../../services/adminApi';
+import AdminOrders from './AdminOrders';
+
+// How often the dashboard checks for new orders while it is open.
+const ORDERS_POLL_MS = 15000;
 
 // Same category ids the storefront filter uses (ProductsPage.jsx).
 const CATEGORIES = [
@@ -56,6 +62,19 @@ export default function AdminDashboard({ onExit = () => {}, onUnauthorized = () 
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Orders + alerts state. The badge count is derived from the orders
+  // themselves, so it updates the moment an order is marked seen.
+  const [tab, setTab] = useState('products'); // 'products' | 'orders'
+  const [orders, setOrders] = useState([]);
+  const [ordersError, setOrdersError] = useState('');
+  const [busyOrderId, setBusyOrderId] = useState(null);
+  const [notifPerm, setNotifPerm] = useState(
+    () => ('Notification' in window ? Notification.permission : 'unsupported')
+  );
+  const newCount = orders.filter((o) => o.status === 'new').length;
+  const knownNewIds = useRef(new Set());
+  const firstOrdersLoad = useRef(true);
+
   const loadProducts = useCallback(async () => {
     try {
       const data = await fetchAdminProducts();
@@ -87,6 +106,72 @@ export default function AdminDashboard({ onExit = () => {}, onUnauthorized = () 
       return true;
     }
     return false;
+  };
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await fetchAdminOrders();
+      const list = data && Array.isArray(data.orders) ? data.orders : [];
+      setOrders(list);
+      setOrdersError('');
+
+      // Browser notifications: only for orders that arrive AFTER the first
+      // load (the initial backlog just seeds the known-ids set, so opening
+      // the dashboard doesn't fire a storm of popups).
+      const newOnes = list.filter((o) => o.status === 'new');
+      if (firstOrdersLoad.current) {
+        knownNewIds.current = new Set(newOnes.map((o) => o.id));
+        firstOrdersLoad.current = false;
+      } else {
+        const fresh = newOnes.filter((o) => !knownNewIds.current.has(o.id));
+        knownNewIds.current = new Set(newOnes.map((o) => o.id));
+        if (fresh.length && 'Notification' in window && Notification.permission === 'granted') {
+          fresh.forEach((o) => {
+            try {
+              new Notification(`New order #${o.id} — Smoke Shop`, {
+                body: `${(o.customer && o.customer.fullName) || 'A customer'} · $${Number(o.total || 0).toFixed(2)}`,
+              });
+            } catch { /* notifications are best-effort only */ }
+          });
+        }
+      }
+    } catch (err) {
+      if (!handleUnauthorized(err)) {
+        setOrdersError(`Could not load orders (${err.message}). Is the server running?`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadOrdersRef = useRef(loadOrders);
+  loadOrdersRef.current = loadOrders;
+
+  // Poll for new orders while the dashboard is open, so the badge and the
+  // Orders view stay live without a manual refresh.
+  useEffect(() => {
+    loadOrdersRef.current();
+    const id = setInterval(() => loadOrdersRef.current(), ORDERS_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleMarkSeen = async (order) => {
+    setBusyOrderId(order.id);
+    try {
+      const updated = await markOrderSeen(order.id);
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
+    } catch (err) {
+      if (!handleUnauthorized(err)) setOrdersError(err.message);
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    if (!('Notification' in window)) return;
+    try {
+      const result = await Notification.requestPermission();
+      setNotifPerm(result);
+    } catch { /* permission prompt unavailable — badge still works */ }
   };
 
   const handleSubmit = async () => {
@@ -165,7 +250,7 @@ export default function AdminDashboard({ onExit = () => {}, onUnauthorized = () 
 
       <header className="am-header">
         <div className="am-shell am-header-in">
-          <h1 className="am-title">Product Admin</h1>
+          <h1 className="am-title">Store Admin</h1>
           <div className="am-header-actions">
             <button className="am-ghost" onClick={onExit}>View shop</button>
             <button className="am-ghost" onClick={handleLogout}>Log out</button>
@@ -174,9 +259,48 @@ export default function AdminDashboard({ onExit = () => {}, onUnauthorized = () 
       </header>
 
       <main className="am-shell">
+        <div className="am-tabs" role="tablist" aria-label="Admin sections">
+          <button
+            role="tab"
+            aria-selected={tab === 'products'}
+            className={`am-tab${tab === 'products' ? ' am-tab--active' : ''}`}
+            onClick={() => setTab('products')}
+          >
+            Products
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'orders'}
+            className={`am-tab${tab === 'orders' ? ' am-tab--active' : ''}`}
+            onClick={() => setTab('orders')}
+          >
+            Orders
+            {newCount > 0 && <span className="am-badge">{newCount} new</span>}
+          </button>
+        </div>
+
         {error && <p className="am-error" role="alert">{error}</p>}
         {notice && <p className="am-notice" role="status">{notice}</p>}
 
+        {tab === 'orders' && (
+          <section className="am-card" aria-labelledby="am-orders-title">
+            <h2 id="am-orders-title">
+              Orders {orders.length > 0 ? `(${orders.length})` : ''}
+              {newCount > 0 ? ` — ${newCount} new` : ''}
+            </h2>
+            <AdminOrders
+              orders={orders}
+              ordersError={ordersError}
+              busyId={busyOrderId}
+              onMarkSeen={handleMarkSeen}
+              notificationPermission={notifPerm}
+              onEnableNotifications={handleEnableNotifications}
+            />
+          </section>
+        )}
+
+        {tab === 'products' && (
+        <>
         <section className="am-card" aria-labelledby="am-form-title">
           <h2 id="am-form-title">{editingId ? 'Edit product' : 'Add a product'}</h2>
 
@@ -282,6 +406,8 @@ export default function AdminDashboard({ onExit = () => {}, onUnauthorized = () 
             {products.length === 0 && <p className="am-empty">No products loaded yet.</p>}
           </div>
         </section>
+        </>
+        )}
       </main>
     </div>
   );
@@ -342,6 +468,18 @@ const css = `
 .am-row-sub { color: #bdbdbd; font-size: .85rem; }
 .am-row-actions { display: flex; gap: 8px; }
 .am-empty { color: #8a8a8a; }
+.am-tabs { display: flex; gap: 8px; margin-top: 20px; }
+.am-tab {
+  padding: 10px 18px; font: inherit; font-size: 1rem; font-weight: 600; color: #bdbdbd;
+  background: none; border: 1px solid #4a4a4a; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.am-tab:hover { color: #fff; border-color: #8a8a8a; }
+.am-tab--active { color: #fff; background: #2b622f; border-color: #2b622f; }
+.am-badge {
+  font-size: .75rem; font-weight: 800; line-height: 1; color: #000;
+  background: #f5b921; border-radius: 999px; padding: 4px 8px;
+}
 @media (max-width: 640px) {
   .am-grid { grid-template-columns: 1fr; }
   .am-row { flex-wrap: wrap; }

@@ -2,3 +2,9 @@ node_modules/
 # Runtime product catalog (auto-created from data/products.seed.json on first run)
 data/products.json
 data/products.json.tmp
+# Runtime orders (placed via POST /api/orders)
+data/orders.json
+data/orders.json.tmp
+# Stored admin accounts — scrypt-hashed, but still never committed
+data/admin-accounts.json
+data/admin-accounts.json.tmp
