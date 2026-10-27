@@ -94,7 +94,7 @@ export default function ProductDetailPage({
               )}
             </div>
 
-            <div className="pd-price">${product.price}</div>
+            <div className="pd-price">{product.price != null ? `$${product.price}` : 'Price TBD'}</div>
 
             <div className="pd-qty">
               <label>Quantity:</label>
@@ -109,9 +109,11 @@ export default function ProductDetailPage({
               Add to Cart
             </button>
 
-            <div className="pd-installment">
-              <p>or 4 interest-free payments of <strong>${(product.price / 4).toFixed(2)}</strong> with Klarna</p>
-            </div>
+            {product.price != null && (
+              <div className="pd-installment">
+                <p>or 4 interest-free payments of <strong>${(product.price / 4).toFixed(2)}</strong> with Klarna</p>
+              </div>
+            )}
 
             <div className="pd-description">
               <h3>About This Product</h3>
