@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function AgeGate({ onVerify = (zip) => console.log('verified', zip), onLogIn = () => console.log('log in'), isAllowedZip }) {
-  const { verifyAge, loading, error: authError } = useAuth();
+  const { verifyAge, loading } = useAuth();
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage({ onLogIn = async (creds) => console.log('log in', creds), onCreateAccount = () => console.log('create account'), onBack = () => console.log('back') }) {
-  const { login, loading, error: authError } = useAuth();
+  const { login, loading } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

@@ -8,7 +8,7 @@ export const CartProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
   const [promo, setPromo] = useState(null);
-  const [taxRate, setTaxRate] = useState(0.102);
+  const [taxRate] = useState(0.102);
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
