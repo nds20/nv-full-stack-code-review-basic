@@ -10,7 +10,7 @@
 # is in cloudflare/README.md, section "If your project is a Worker
 # (not Pages)":
 #   1. `name` — must exactly match your Worker project name.
-#   2. `database_id` — bb452b0e-8bfb-4042-8d08-4f8e902c8164
+#   2. `database_id` — REPLACE_WITH_YOUR_D1_DATABASE_ID.
 
 # MUST exactly match the project name shown in the Cloudflare dashboard
 # under Workers & Pages. If yours differs, edit this one line.
@@ -34,7 +34,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "smokeshop-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "bb452b0e-8bfb-4042-8d08-4f8e902c8164"
 
 # Uploaded product photos. Create the bucket once in the dashboard
 # (R2 Object Storage) with exactly this name, or edit `bucket_name` to
