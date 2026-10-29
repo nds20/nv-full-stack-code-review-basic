@@ -16,7 +16,7 @@
 # under Workers & Pages. If yours differs, edit this one line.
 name = "nv-full-stack-code-review-basic"
 
-main = "worker/index.js"
+main = "worker/shield-entry.js"
 compatibility_date = "2026-09-01"
 
 # The built storefront. `run_worker_first` sends every /api/* request to
