@@ -49,3 +49,4 @@ bucket_name = "smokeshop-product-photos"
 # Secrets) or with `wrangler secret put` — never commit real values.
 # Without them, the demo login (admin / admin123) stays active until a
 # real admin account is created, exactly as on the Node server.
+# Deploy retrigger 2026-10-29: retry the 824 Shield production build.
